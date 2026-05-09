@@ -1,0 +1,32 @@
+# HomeShield deps. Tested on Windows 11 + Python 3.11 + CUDA 12.x.
+# Install PyTorch FIRST, separately:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Detection / CV
+ultralytics==8.3.39
+opencv-python>=4.9.0,<4.11        # 4.11+ drops NumPy 1.x
+opencv-python-headless>=4.9.0,<4.11
+numpy>=1.26.0,<2.0                # InsightFace ABI requires NumPy 1.x
+scipy>=1.11.0,<1.14
+PyYAML>=6.0
+tqdm>=4.66.0
+Pillow>=10.0.0
+shapely>=2.0.0
+
+# Face recognition
+# On Windows w/o MSVC, use the bundled wheel:
+#   pip install Face_Detection/insightface-0.7.3-cp311-cp311-win_amd64.whl
+insightface==0.7.3
+onnxruntime-gpu>=1.17.0,<2.0; platform_system != "Darwin"
+onnxruntime>=1.17.0,<2.0;     platform_system == "Darwin"
+
+# Web dashboard
+Flask>=3.0.0,<4
+Werkzeug>=3.0.0,<4
+Jinja2>=3.1.0
+itsdangerous>=2.1.0
+click>=8.1.0
+blinker>=1.7.0
+
+# Optional
+matplotlib>=3.8.0,<4

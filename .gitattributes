@@ -1,0 +1,12 @@
+# Normalise line endings so the repo is identical on Windows / macOS / Linux.
+* text=auto eol=lf
+
+# Keep binary assets binary.
+*.pt   binary
+*.onnx binary
+*.whl  binary
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.svg  binary
+*.db   binary

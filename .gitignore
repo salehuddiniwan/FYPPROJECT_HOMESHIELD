@@ -1,0 +1,69 @@
+# =========================================================================
+# HomeShield - .gitignore
+# =========================================================================
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Virtual envs ----
+venv/
+.venv/
+env/
+ENV/
+.env
+
+# ---- IDEs / editors ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.spyderproject
+.spyproject
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- HomeShield runtime artefacts (regenerated on each run) ----
+homeshield.db
+homeshield.db-wal
+homeshield.db-shm
+events.db
+events.db-wal
+events.db-shm
+snapshots/
+person_photos/
+intruder_photos/
+runs/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Large model weights (re-download manually; see README) ----
+# yolo26x-pose.pt is 121 MB which exceeds GitHub's 100 MB hard limit per file.
+# Download it from Ultralytics (https://github.com/ultralytics/assets/releases)
+# or train your own and place under Fall_Detection/weights/.
+Fall_Detection/weights/yolo11m-pose.pt
+Fall_Detection/weights/yolo11x-pose.pt
+Fall_Detection/weights/yolo26m-pose.pt
+Fall_Detection/weights/yolo26x-pose.pt
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+
+# ---- Claude / agent caches ----
+.claude/

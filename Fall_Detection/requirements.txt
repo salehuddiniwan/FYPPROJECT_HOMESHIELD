@@ -1,0 +1,14 @@
+# ---- Core ----
+# PyTorch with CUDA is installed separately via the index URL (see README).
+# DO NOT pin torch / torchvision here, or pip will pull the CPU-only build
+# from PyPI and overwrite your GPU build.
+
+ultralytics>=8.3.0          # Provides the YOLO pose API (works for YOLOv8 / YOLO11 / YOLO26 weights)
+opencv-python>=4.9.0        # Video I/O + drawing
+numpy>=1.26.0               # Vector math
+scipy>=1.11.0               # Signal smoothing for velocity (optional but used)
+
+# ---- Helpful extras ----
+matplotlib>=3.8.0           # Optional: plot per-frame debug graphs
+PyYAML>=6.0                 # Used by ultralytics
+tqdm>=4.66.0                # Progress bars

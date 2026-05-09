@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HomeShield — Smart Surveillance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#070b16;
+  --sidebar-w:252px;
+  --topbar-h:64px;
+  --surface:#0e1628;
+  --surface-2:#131d2e;
+  --surface-3:#192538;
+  --border:rgba(255,255,255,0.07);
+  --border-bright:rgba(255,255,255,0.13);
+  --text:#e8eeff;
+  --text-2:#7888a8;
+  --text-3:#4a5870;
+  --primary:#4080ff;
+  --primary-dim:rgba(64,128,255,0.12);
+  --primary-glow:rgba(64,128,255,0.3);
+  --danger:#ff3b60;
+  --danger-dim:rgba(255,59,96,0.12);
+  --danger-glow:rgba(255,59,96,0.3);
+  --warning:#f59e0b;
+  --warning-dim:rgba(245,158,11,0.12);
+  --success:#0dd98a;
+  --success-dim:rgba(13,217,138,0.1);
+  --success-glow:rgba(13,217,138,0.3);
+  --radius:16px;
+  --radius-sm:10px;
+  --radius-xs:7px;
+  --blur:saturate(200%) blur(30px);
+  --glass-bg:rgba(255,255,255,0.04);
+  --glass-bg-hi:rgba(255,255,255,0.08);
+  --glass-border:rgba(255,255,255,0.12);
+  --glass-highlight:linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0) 50%);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.35),0 1px 0 rgba(255,255,255,0.06) inset;
+}
+
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  font-size:15px;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 70% at -5% -5%,rgba(64,128,255,0.09) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 50% at 105% 110%,rgba(13,217,138,0.06) 0%,transparent 50%);
+}
+
+/* ══ SIDEBAR ══ */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;
+  width:var(--sidebar-w);
+  background:rgba(8,12,22,0.97);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  z-index:200;
+}
+.sidebar-logo{
+  display:flex;align-items:center;gap:12px;
+  padding:20px 20px 18px;
+  border-bottom:1px solid var(--border);
+}
+.logo-mark{
+  width:42px;height:42px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;border-radius:11px;
+}
+.logo-mark img{width:42px;height:42px;object-fit:contain;display:block}
+.logo-mark svg{width:22px;height:22px}
+.logo-text{line-height:1.2}
+.logo-name{font-size:16px;font-weight:800;letter-spacing:-0.4px}
+.logo-ver{font-size:10px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:1px}
+
+.sidebar-section{
+  font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.6px;
+  color:var(--text-3);font-family:'JetBrains Mono',monospace;
+  padding:20px 20px 7px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 16px 9px 20px;
+  border:none;background:none;
+  color:var(--text-2);font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:500;cursor:pointer;
+  width:100%;text-align:left;position:relative;
+  transition:color .15s,background .15s;
+  margin:1px 0;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+.nav-item.active{color:var(--text);background:var(--primary-dim)}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:6px;bottom:6px;
+  width:3px;border-radius:0 3px 3px 0;
+  background:var(--primary);box-shadow:0 0 12px var(--primary-glow);
+}
+.nav-icon{
+  width:30px;height:30px;border-radius:var(--radius-xs);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.05);transition:background .15s;
+}
+.nav-item.active .nav-icon{background:var(--primary-dim)}
+.nav-icon svg{width:15px;height:15px}
+
+.sidebar-bottom{
+  margin-top:auto;padding:14px 16px;
+  border-top:1px solid var(--border);
+}
+.sys-status{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:var(--radius-sm);margin-bottom:10px;
+}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--success);box-shadow:0 0 8px var(--success-glow);
+  animation:blink 2s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.status-dot.off{background:var(--text-3);box-shadow:none;animation:none}
+.s-label{font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.8px;font-family:'JetBrains Mono',monospace}
+.s-val{font-size:12px;font-weight:600;color:var(--text);margin-top:1px}
+
+/* ══ TOPBAR ══ */
+.topbar{
+  position:fixed;top:0;left:var(--sidebar-w);right:0;
+  height:var(--topbar-h);
+  background:rgba(7,11,22,0.85);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;z-index:100;gap:16px;
+}
+.topbar-title{font-size:17px;font-weight:700;letter-spacing:-0.3px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-chips{display:flex;align-items:center;gap:8px}
+.topbar-chip{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 14px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--glass-border);
+  border-radius:20px;
+  backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  transition:border-color .2s;
+}
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.chip-dot.green{background:var(--success);box-shadow:0 0 6px var(--success-glow)}
+.chip-dot.red{background:var(--danger);box-shadow:0 0 6px var(--danger-glow)}
+.chip-dot.blue{background:var(--primary)}
+.chip-content{display:flex;flex-direction:column;align-items:flex-end}
+.chip-label{font-size:9px;color:var(--text-3);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.8px}
+.chip-val{font-size:15px;font-weight:700;letter-spacing:-0.5px;line-height:1.1}
+
+/* Hamburger */
+.burger-btn{
+  display:none;
+  background:transparent;border:1px solid var(--border);
+  color:var(--text);padding:8px 10px;border-radius:var(--radius-xs);
+  cursor:pointer;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s;flex-shrink:0;
+}
+.burger-btn:hover{background:rgba(255,255,255,0.05);border-color:var(--border-bright)}
+.sidebar-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+  z-index:199;opacity:0;transition:opacity .2s;
+}
+.sidebar-backdrop.show{display:block;opacity:1}
+
+/* ══ MAIN ══ */
+.main{margin-left:var(--sidebar-w);padding-top:var(--topbar-h);min-height:100vh;position:relative;z-index:1}
+.content{padding:24px 26px}
+.page{display:none}.page.active{display:block}
+
+/* ══ BUTTONS ══ */
+.btn{
+  padding:8px 16px;border-radius:var(--radius-xs);
+  border:1px solid var(--glass-border);background:rgba(255,255,255,0.06);
+  cursor:pointer;font-size:13px;font-weight:600;
+  font-family:'Inter',sans-serif;color:var(--text);transition:all .15s;
+  display:inline-flex;align-items:center;gap:6px;
+  backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+}
+.btn:hover{background:rgba(255,255,255,0.10);border-color:rgba(255,255,255,0.2)}
+.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 0 16px var(--primary-glow)}
+.btn-primary:hover{background:#5090ff;box-shadow:0 0 24px var(--primary-glow)}
+.btn-danger{background:var(--danger-dim);color:var(--danger);border-color:rgba(255,59,96,0.28)}
+.btn-danger:hover{background:rgba(255,59,96,0.2);box-shadow:0 0 12px var(--danger-glow)}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-full{width:100%;justify-content:center}
+
+/* ══ METRICS ══ */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.metric{
+  padding:18px 20px;overflow:hidden;
+  transition:border-color .2s,transform .15s;
+}
+.metric:hover{border-color:rgba(255,255,255,0.18);transform:translateY(-1px)}
+.metric::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--primary) 50%,transparent);opacity:0.6;z-index:1}
+.metric-label{font-size:12px;color:var(--text-2);font-weight:500;margin-bottom:10px;letter-spacing:0.1px;position:relative;z-index:1}
+.metric-value{font-size:32px;font-weight:800;letter-spacing:-1.5px;line-height:1;position:relative;z-index:1}
+.metric-value.success{color:var(--success);text-shadow:0 0 20px var(--success-glow)}
+.metric-value.danger{color:var(--danger);text-shadow:0 0 20px var(--danger-glow)}
+
+/* ══ LIVE LAYOUT ══ */
+.live-layout{display:flex;flex-direction:row;gap:0;min-height:0}
+.live-divider{
+  width:6px;flex-shrink:0;cursor:col-resize;background:transparent;
+  border-radius:3px;margin:0 4px;position:relative;transition:background .15s;
+}
+.live-divider::after{
+  content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:2px;height:40px;background:var(--border-bright);
+  border-radius:2px;transition:background .15s,height .15s;
+}
+.live-divider:hover::after,.live-divider.dragging::after{
+  background:var(--primary);height:60px;box-shadow:0 0 8px var(--primary-glow);
+}
+.hero-col{flex:1;min-width:200px;display:flex;flex-direction:column}
+.thumb-col{width:290px;min-width:160px;max-width:600px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+
+/* Liquid glass card system — amber gradient border shell + glow */
+.hero-feed,.thumb-card,.live-log,.log,.settings-card,.zone-canvas-wrap,.metric,.add-cam-panel,.person-card{
+  background:var(--glass-bg);
+  backdrop-filter:var(--blur-lg);-webkit-backdrop-filter:var(--blur-lg);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:var(--radius);
+  box-shadow:var(--glass-shadow);
+  position:relative;
+}
+/* gradient edge — amber→white→amber, applied via mask so it acts as a hairline frame */
+.hero-feed::before,.thumb-card::before,.live-log::before,.log::before,.settings-card::before,.zone-canvas-wrap::before,.metric::before,.add-cam-panel::before,.person-card::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:var(--glass-edge);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  pointer-events:none;z-index:2;
+}
+/* inner top highlight — Apple-style sheen */
+.hero-feed::after,.thumb-card::after,.live-log::after,.log::after,.settings-card::after,.zone-canvas-wrap::after,.add-cam-panel::after,.person-card::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:var(--glass-highlight);
+  pointer-events:none;z-index:1;
+}
+.hero-feed{overflow:hidden;transition:border-color .2s}
+.hero-feed:hover{border-color:var(--border-bright)}
+.hero-screen{background:#050810;aspect-ratio:16/9;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:3}
+.hero-screen img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-overlay{position:absolute;top:10px;left:10px;display:flex;gap:7px}
+.live-pill{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(5,8,16,0.85);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.12);border-radius:20px;
+  padding:4px 11px;font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;
+}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--danger);animation:blink 1s infinite}
+.live-dot.offline{background:var(--text-3);animation:none}
+.hero-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 18px;border-top:1px solid var(--glass-border);
+  position:relative;z-index:1;
+}
+.hero-cam-name{font-size:14px;font-weight:700}
+.hero-cam-loc{font-size:11px;color:var(--text-2);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.feed-badge{font-size:10px;padding:3px 11px;border-radius:20px;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0;letter-spacing:0.5px}
+.feed-badge.live{background:var(--success-dim);color:var(--success);border:1px solid rgba(13,217,138,0.3)}
+.feed-badge.alert{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(255,59,96,0.3);animation:blink 1s infinite}
+
+/* Thumbnail panel */
+.thumb-panel{display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.thumb-panel::-webkit-scrollbar{width:3px}
+.thumb-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:10px}
+.thumb-card{overflow:hidden;cursor:pointer;transition:all .2s ease;flex-shrink:0}
+.thumb-card:hover{border-color:var(--border-bright);transform:translateX(-2px)}
+.thumb-card.selected{border-color:rgba(64,128,255,0.45);box-shadow:0 0 16px rgba(64,128,255,0.1)}
+.thumb-card.alert-cam{border-color:rgba(255,59,96,0.4)}
+.thumb-screen{background:#050810;aspect-ratio:16/9;position:relative;overflow:hidden;z-index:3}
+.thumb-screen img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb-offline{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-3);font-size:10px;font-family:'JetBrains Mono',monospace}
+.thumb-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 11px;border-top:1px solid var(--border);
+}
+.thumb-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Add camera panel */
+.add-cam-panel{padding:14px;flex-shrink:0}
+.add-cam-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;position:relative;z-index:1}
+#addCamForm{display:flex;flex-direction:column;gap:7px;position:relative;z-index:1}
+#addCamForm input{
+  width:100%;padding:9px 11px;
+  border:1px solid var(--glass-border);border-radius:var(--radius-xs);
+  font-size:12px;background:rgba(255,255,255,0.04);color:var(--text);
+  font-family:'Inter',sans-serif;
+}
+#addCamForm input::placeholder{color:var(--text-3)}
+#addCamForm input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-dim)}
+
+/* Live log */
+.live-log{overflow:hidden;margin-top:16px}
+
+/* ══ LOG ══ */
+.log{overflow:hidden}
+.log-header{
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.log-header h3{font-size:13px;font-weight:700}
+.log-filters{display:flex;gap:7px}
+.log-filters select{
+  padding:5px 10px;border:1px solid var(--border-bright);
+  border-radius:var(--radius-xs);font-size:11px;
+  background:rgba(255,255,255,0.05);color:var(--text);font-family:'Inter',sans-serif;cursor:pointer;
+}
+.log-header{position:relative;z-index:1}
+.log-row{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:13px;cursor:pointer;transition:background .12s;
+  position:relative;z-index:1;
+}
+.log-row:hover{background:rgba(255,255,255,0.03)}
+.log-row:last-child{border-bottom:none}
+.badge{font-size:9px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;font-family:'JetBrains Mono',monospace;letter-spacing:0.3px}
+.badge-danger{background:rgba(255,59,96,0.12);color:#ff6b85;border:1px solid rgba(255,59,96,0.22)}
+.badge-warning{background:var(--warning-dim);color:#fbbf24;border:1px solid rgba(245,158,11,0.22)}
+.badge-yellow{background:rgba(250,204,21,0.14);color:#fde047;border:1px solid rgba(250,204,21,0.32)}
+.badge-orange{background:rgba(251,146,60,0.16);color:#fb923c;border:1px solid rgba(251,146,60,0.34)}
+.badge-success{background:var(--success-dim);color:#2ddd9a;border:1px solid rgba(13,217,138,0.22)}
+.badge-info{background:var(--primary-dim);color:#70a8ff;border:1px solid rgba(64,128,255,0.22)}
+.log-desc{flex:1;color:var(--text)}
+.log-time{color:var(--text-3);font-size:10px;white-space:nowrap;font-family:'JetBrains Mono',monospace}
+.log-conf{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--primary)}
+.log-snap{width:40px;height:28px;border-radius:5px;object-fit:cover;cursor:pointer;border:1px solid var(--border);transition:transform .15s}
+.log-snap:hover{transform:scale(1.12)}
+
+/* ══ SETTINGS ══ */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.settings-shell{display:grid;grid-template-columns:220px 1fr;gap:20px;padding-bottom:88px}
+.set-nav{
+  display:flex;flex-direction:column;gap:2px;
+  position:sticky;top:calc(var(--topbar-h) + 18px);align-self:start;
+}
+.set-nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:8px;
+  background:transparent;border:none;cursor:pointer;
+  color:var(--text-2);font-size:13px;font-weight:500;
+  font-family:'Inter',sans-serif;text-align:left;width:100%;
+  transition:background .15s,color .15s;
+}
+.set-nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+.set-nav-item.active{background:var(--primary-dim);color:var(--text)}
+.set-nav-section{
+  font-size:9px;font-weight:600;letter-spacing:1.6px;
+  color:var(--text-3);text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+  padding:14px 12px 6px;
+}
+.set-nav-section:first-child{padding-top:4px}
+.set-nav-item img{width:22px;height:22px;object-fit:contain;flex-shrink:0}
+.set-nav-item svg{width:18px;height:18px;flex-shrink:0;color:var(--text-2)}
+.set-nav-item.active svg{color:var(--primary)}
+
+.set-content{display:flex;flex-direction:column;gap:16px;min-width:0}
+.set-pane{display:none;flex-direction:column;gap:14px}
+.set-pane.active{display:flex}
+.set-pane-head{margin-bottom:4px}
+.set-pane-head h2{
+  font-size:20px;font-weight:800;letter-spacing:-0.5px;margin:0 0 4px 0;
+}
+.set-pane-head p{margin:0;color:var(--text-2);font-size:13px;line-height:1.6}
+
+/* Sticky save bar */
+.save-bar{
+  position:fixed;bottom:0;left:var(--sidebar-w);right:0;
+  background:rgba(7,11,22,0.92);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:1px solid var(--border);
+  padding:12px 28px;display:flex;align-items:center;justify-content:space-between;
+  gap:14px;z-index:90;
+  transform:translateY(100%);transition:transform .25s ease;
+}
+.save-bar.dirty{transform:translateY(0)}
+.save-bar .save-status{display:flex;align-items:center;gap:10px;color:var(--text-2);font-size:13px}
+.save-bar .save-dot{width:8px;height:8px;border-radius:50%;background:var(--warning);box-shadow:0 0 8px rgba(245,158,11,0.5);animation:blink 1.6s infinite}
+.save-bar .save-actions{display:flex;gap:8px}
+@media(max-width:900px){
+  .save-bar{left:0}
+  .settings-shell{grid-template-columns:1fr}
+  .set-nav{
+    flex-direction:row;flex-wrap:nowrap;align-items:center;gap:6px;
+    overflow-x:auto;overflow-y:hidden;
+    position:sticky;top:var(--topbar-h);z-index:5;
+    margin:0 -26px;padding:8px 26px 10px;
+    background:rgba(7,11,22,0.92);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border-bottom:1px solid var(--border);
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,0.25) transparent;
+  }
+  .set-nav::-webkit-scrollbar{height:6px}
+  .set-nav::-webkit-scrollbar-track{background:transparent}
+  .set-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.22);border-radius:3px}
+  .set-nav-section{
+    font-size:0;letter-spacing:0;
+    padding:0;margin:0 2px;
+    width:1px;height:18px;
+    border-right:1px solid var(--glass-border);
+    flex:0 0 auto;align-self:center;overflow:hidden;
+  }
+  .set-nav-section:first-child{padding-top:0;margin-left:0}
+  .set-nav-item{
+    flex:0 0 auto;white-space:nowrap;
+    padding:8px 12px;font-size:12px;
+  }
+  .set-nav-item img{width:18px;height:18px}
+  .set-nav-item svg{width:16px;height:16px}
+}
+.settings-card{padding:22px;transition:border-color .2s}
+.settings-card:hover{border-color:rgba(255,255,255,0.18)}
+.settings-card>*,.log>*,.live-log>*,.add-cam-panel>*,.zone-canvas-wrap>*,.metric>*,.person-card>*,.thumb-card>*,.hero-feed>*{position:relative;z-index:3}
+.settings-card h3{font-size:14px;font-weight:700;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--glass-border)}
+
+/* Rich card head: icon tile + title + 1-line description */
+.s-card-head{
+  display:flex;align-items:flex-start;gap:14px;
+  margin-bottom:18px;padding-bottom:14px;
+  border-bottom:1px solid var(--glass-border);
+}
+.s-icon{
+  flex-shrink:0;width:52px;height:52px;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;border-radius:0;
+  font-size:26px;line-height:1;
+}
+.s-icon img{width:52px;height:52px;object-fit:contain;display:block}
+/* Inline-SVG fallback (e.g. About card): show a small tinted tile */
+.s-icon:has(svg){
+  width:40px;height:40px;border-radius:10px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--glass-border);
+}
+.s-icon svg{width:20px;height:20px;color:var(--text-2)}
+.s-icon.icon-blue:has(svg)  {background:var(--primary-dim);border-color:rgba(64,128,255,0.32)}
+.s-icon.icon-blue svg       {color:var(--primary)}
+.s-icon.icon-red:has(svg)   {background:var(--danger-dim);border-color:rgba(255,59,96,0.32)}
+.s-icon.icon-red svg        {color:#ff6b85}
+.s-icon.icon-amber:has(svg) {background:var(--warning-dim);border-color:rgba(245,158,11,0.32)}
+.s-icon.icon-amber svg      {color:#fbbf24}
+.s-icon.icon-green:has(svg) {background:var(--success-dim);border-color:rgba(13,217,138,0.32)}
+.s-icon.icon-green svg      {color:#2ddd9a}
+.s-icon.icon-orange:has(svg){background:rgba(251,146,60,0.16);border-color:rgba(251,146,60,0.34)}
+.s-icon.icon-orange svg     {color:#fb923c}
+.s-icon.icon-violet:has(svg){background:rgba(139,92,246,0.14);border-color:rgba(139,92,246,0.34)}
+.s-icon.icon-violet svg     {color:#a78bfa}
+.s-head-text{flex:1;min-width:0}
+.s-head-text h3{
+  font-size:14px;font-weight:700;letter-spacing:-0.2px;
+  margin:0 0 4px 0;padding:0;border:none;
+}
+.s-head-text p{
+  margin:0;font-size:11.5px;color:var(--text-2);line-height:1.5;
+}
+.form-group{margin-bottom:16px;position:relative}
+.form-group label{
+  display:block;font-size:10px;color:var(--text-2);margin-bottom:7px;
+  font-weight:600;text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;
+}
+.form-group input,.form-group textarea,.form-group select{
+  width:100%;padding:10px 13px;
+  border:1px solid var(--glass-border);border-radius:var(--radius-xs);
+  font-size:14px;background:rgba(255,255,255,0.04);color:var(--text);
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{
+  outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 3px var(--primary-dim);background:rgba(255,255,255,0.06);
+}
+.form-group input::placeholder,.form-group textarea::placeholder{color:var(--text-3)}
+
+/* ── Slider control ── */
+.slider-group{margin-bottom:18px;position:relative}
+.slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.slider-head label{font-size:10px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace}
+.slider-val{font-size:18px;font-weight:700;color:var(--primary);font-family:'JetBrains Mono',monospace;letter-spacing:-0.3px}
+.slider-val::after{content:'%';font-size:13px;color:var(--text-2);margin-left:2px;font-weight:500}
+.slider{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:6px;border-radius:6px;
+  background:linear-gradient(90deg,var(--primary) 0%,var(--primary) var(--p,50%),rgba(255,255,255,0.08) var(--p,50%),rgba(255,255,255,0.08) 100%);
+  outline:none;cursor:pointer;
+  border:1px solid rgba(255,255,255,0.06);
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(180deg,#fff 0%,#dce6ff 100%);
+  border:2px solid var(--primary);
+  box-shadow:0 2px 8px rgba(64,128,255,0.4),0 0 0 4px transparent;
+  cursor:grab;transition:box-shadow .15s,transform .1s;
+}
+.slider::-webkit-slider-thumb:hover{box-shadow:0 2px 8px rgba(64,128,255,0.5),0 0 0 6px var(--primary-dim)}
+.slider::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.08)}
+.slider::-moz-range-thumb{
+  width:20px;height:20px;border-radius:50%;
+  background:#fff;border:2px solid var(--primary);
+  box-shadow:0 2px 8px rgba(64,128,255,0.4);cursor:grab;
+}
+
+/* ── Radio group ── */
+.radio-group{display:flex;flex-direction:column;gap:8px;position:relative}
+.radio-opt{
+  display:flex;align-items:center;gap:11px;
+  padding:11px 14px;cursor:pointer;
+  border:1px solid var(--glass-border);border-radius:var(--radius-xs);
+  background:rgba(255,255,255,0.03);
+  transition:border-color .15s,background .15s;
+  font-size:13px;
+}
+.radio-opt:hover{border-color:rgba(255,255,255,0.18);background:rgba(255,255,255,0.05)}
+.radio-opt input[type=radio]{position:absolute;opacity:0;pointer-events:none}
+.radio-mark{
+  width:18px;height:18px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--text-3);
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .15s;
+}
+.radio-mark::after{
+  content:'';width:8px;height:8px;border-radius:50%;
+  background:var(--primary);opacity:0;transform:scale(0.5);
+  transition:opacity .15s,transform .15s;
+}
+.radio-opt:has(input:checked){
+  border-color:var(--primary);background:var(--primary-dim);
+}
+.radio-opt:has(input:checked) .radio-mark{border-color:var(--primary)}
+.radio-opt:has(input:checked) .radio-mark::after{opacity:1;transform:scale(1)}
+.radio-text{flex:1;font-weight:500}
+.radio-text small{display:block;color:var(--text-2);font-size:11px;font-weight:400;margin-top:2px}
+
+/* ══ CAMERAS ══ */
+.cam-list{display:flex;flex-direction:column;gap:7px}
+.cam-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border:1px solid var(--border);border-radius:var(--radius-xs);
+  background:rgba(255,255,255,0.02);
+}
+.cam-item .cam-info{flex:1}
+.cam-item .cam-info strong{font-size:13px;font-weight:600}
+.cam-item .cam-info small{color:var(--text-2);font-size:10px;display:block;margin-top:1px;font-family:'JetBrains Mono',monospace}
+
+/* ══ ZONES ══ */
+.zone-canvas-wrap{padding:20px}
+.zone-list{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+.zone-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 12px;background:var(--warning-dim);
+  border:1px solid rgba(245,158,11,0.18);border-radius:var(--radius-xs);font-size:12px;
+}
+select{
+  background:rgba(255,255,255,0.05);color:var(--text);
+  border:1px solid var(--border-bright);border-radius:var(--radius-xs);
+  font-family:'Inter',sans-serif;padding:9px 12px;
+}
+
+/* ══ PERSONS ══ */
+.persons-layout{display:grid;grid-template-columns:1fr 360px;gap:18px}
+@media(max-width:1100px){.persons-layout{grid-template-columns:1fr}}
+.persons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.person-card{
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+  transition:transform .12s ease,border-color .12s ease;position:relative;
+}
+.person-card:hover{transform:translateY(-2px);border-color:rgba(64,128,255,0.35)}
+.person-photo{
+  width:100%;aspect-ratio:1/1;object-fit:cover;
+  background:#080c16;display:block;border-bottom:1px solid var(--border);
+}
+.person-photo-placeholder{
+  width:100%;aspect-ratio:1/1;
+  background:linear-gradient(135deg,#131d2e,#0e1628);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-3);font-size:38px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);
+}
+.person-body{padding:11px 13px}
+.person-name{font-weight:700;font-size:13px;color:var(--text);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+.person-delete{
+  background:transparent;border:1px solid var(--border);
+  color:var(--text-2);padding:4px 10px;border-radius:var(--radius-xs);
+  font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.5px;text-transform:uppercase;transition:all .15s;
+}
+.person-delete:hover{background:var(--danger-dim);border-color:var(--danger);color:#ff6b85}
+.cat-pill{
+  padding:3px 8px;border-radius:4px;font-size:9px;font-weight:700;
+  letter-spacing:0.6px;font-family:'JetBrains Mono',monospace;
+}
+.cat-elderly{background:rgba(251,146,60,0.18);color:#fb923c}
+.cat-adult{background:var(--primary-dim);color:#70a8ff}
+.cat-child{background:var(--success-dim);color:#2ddd9a}
+.fr-status-pill{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 13px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:20px;font-size:11px;font-family:'JetBrains Mono',monospace;margin-bottom:18px;
+}
+.fr-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.fr-dot.on{background:var(--success);box-shadow:0 0 8px var(--success-glow)}
+.fr-dot.off{background:#f87171}
+.persons-empty{grid-column:1/-1;padding:40px 20px;text-align:center;color:var(--text-2);font-size:12px;line-height:1.8}
+.persons-empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px;font-weight:700}
+
+/* ══ MODAL ══ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);
+  z-index:400;align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:#0e1628;border:1px solid var(--border-bright);border-radius:18px;padding:26px;
+  max-width:480px;width:90%;max-height:80vh;overflow-y:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 40px rgba(64,128,255,0.08);
+}
+.modal h3{margin-bottom:14px;font-size:16px;font-weight:700}
+.modal img{width:100%;border-radius:9px;border:1px solid var(--border)}
+.modal p{margin-top:10px;font-size:12px;color:var(--text-2);font-family:'JetBrains Mono',monospace}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.14)}
+
+@media(max-width:900px){
+  .sidebar{
+    width:260px;transform:translateX(-260px);
+    transition:transform .25s ease;z-index:200;
+    box-shadow:4px 0 32px rgba(0,0,0,0.6);
+  }
+  .sidebar.open{transform:translateX(0)}
+  .topbar,.main{left:0;margin-left:0}
+  .topbar{padding:0 14px;gap:10px}
+  .burger-btn{display:inline-flex}
+  .topbar-title{font-size:15px}
+  .topbar-chips{gap:6px}
+  .topbar-chip{padding:5px 10px}
+  .chip-val{font-size:13px}
+  .content{padding:14px 14px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .live-layout{flex-direction:column;gap:14px}
+  .live-divider{display:none}
+  .hero-col,.thumb-col{width:100%!important;min-width:0}
+  .hero-col{margin-bottom:4px}
+  .thumb-col{flex-direction:row;overflow-x:auto;padding-bottom:6px;gap:10px}
+  .thumb-card{min-width:200px;flex-shrink:0}
+  .add-cam-panel{min-width:240px;flex-shrink:0}
+  .settings-grid{grid-template-columns:1fr}
+  .persons-layout{grid-template-columns:1fr}
+  .persons-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+}
+@media(max-width:520px){.topbar-chip:nth-child(3){display:none}}
+@media(max-width:420px){.topbar-chips{display:none}}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <img src="/icons/LOGO.svg" alt="HomeShield">
+    </div>
+    <div class="logo-text">
+      <div class="logo-name">HomeShield</div>
+      <div class="logo-ver">v2.0.0</div>
+    </div>
+  </div>
+
+  <span class="sidebar-section">Monitor</span>
+  <button class="nav-item active" onclick="showPage('live',this)">
+    <div class="nav-icon">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 14h4M8 11v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </div>
+    Live feeds
+  </button>
+  <button class="nav-item" onclick="showPage('events',this)">
+    <div class="nav-icon">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </div>
+    Events
+  </button>
+
+  <span class="sidebar-section">Configure</span>
+  <button class="nav-item" onclick="showPage('zones',this)">
+    <div class="nav-icon">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="5" y="5" width="6" height="6" rx="0.5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 1"/></svg>
+    </div>
+    Zones
+  </button>
+  <button class="nav-item" onclick="showPage('persons',this)">
+    <div class="nav-icon">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 14c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </div>
+    Persons
+  </button>
+  <button class="nav-item" onclick="showPage('settings',this)">
+    <div class="nav-icon">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.22 3.22l1.42 1.42M11.36 11.36l1.42 1.42M11.36 4.64l-1.42 1.42M4.64 11.36l-1.42 1.42" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </div>
+    Settings
+  </button>
+
+  <div class="sidebar-bottom">
+    <div class="sys-status">
+      <div class="status-dot" id="statusDot"></div>
+      <div style="flex:1">
+        <div class="s-label">System</div>
+        <div class="s-val" id="statusText">Starting…</div>
+      </div>
+    </div>
+    <div class="sys-status">
+      <div class="status-dot" id="fpsDot" style="background:var(--primary);box-shadow:0 0 8px var(--primary-glow);animation:none"></div>
+      <div style="flex:1">
+        <div class="s-label">Avg FPS</div>
+        <div class="s-val" id="fpsText" style="font-family:'JetBrains Mono',monospace">--</div>
+      </div>
+    </div>
+    <button class="btn btn-danger btn-full" id="toggleBtn" onclick="toggleSystem()">Stop system</button>
+  </div>
+</aside>
+
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <button class="burger-btn" id="burgerBtn" aria-label="Toggle menu" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <div class="topbar-title" id="topbarTitle">Live feeds</div>
+  <div class="topbar-chips">
+    <div class="topbar-chip">
+      <div class="chip-dot green"></div>
+      <div class="chip-content">
+        <span class="chip-label">Cameras</span>
+        <span class="chip-val" style="color:var(--success)" id="tb-cameras">–</span>
+      </div>
+    </div>
+    <div class="topbar-chip">
+      <div class="chip-dot red"></div>
+      <div class="chip-content">
+        <span class="chip-label">Alerts</span>
+        <span class="chip-val" style="color:var(--danger)" id="tb-alerts">–</span>
+      </div>
+    </div>
+    <div class="topbar-chip">
+      <div class="chip-dot blue"></div>
+      <div class="chip-content">
+        <span class="chip-label">People</span>
+        <span class="chip-val" id="tb-people">–</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile sidebar backdrop -->
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+<div class="content">
+
+  <!-- LIVE PAGE -->
+  <div class="page active" id="page-live">
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Cameras online</div><div class="metric-value success" id="m-cameras">–</div></div>
+      <div class="metric"><div class="metric-label">Alerts today</div><div class="metric-value danger" id="m-alerts">0</div></div>
+      <div class="metric"><div class="metric-label">People detected</div><div class="metric-value" id="m-people">0</div></div>
+      <div class="metric"><div class="metric-label">System status</div><div class="metric-value success" id="m-status">Active</div></div>
+    </div>
+
+    <div class="live-layout" id="liveLayout">
+
+      <div class="hero-col">
+        <div class="hero-feed">
+          <div class="hero-screen" id="heroScreen">
+            <div class="hero-overlay" id="heroOverlay">
+              <div class="live-pill"><div class="live-dot"></div><span id="heroPillText">LIVE</span></div>
+            </div>
+            <span style="color:var(--text-3);font-size:12px;font-family:'JetBrains Mono',monospace">No cameras configured</span>
+          </div>
+          <div class="hero-bar">
+            <div>
+              <div class="hero-cam-name" id="heroCamName">–</div>
+              <div class="hero-cam-loc" id="heroCamLoc">–</div>
+            </div>
+            <span class="feed-badge live" id="heroBadge">LIVE</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="live-divider" id="liveDivider" title="Drag to resize · Double-click to reset"></div>
+
+      <div class="thumb-col" id="thumbCol">
+        <div class="thumb-panel" id="thumbPanel"></div>
+        <div class="add-cam-panel" id="addCamPanel">
+          <div class="add-cam-label">+ Add camera</div>
+          <div id="addCamForm">
+            <input id="qcName" placeholder="Name (e.g. Front Door)">
+            <input id="qcUrl" placeholder="RTSP URL or 0 for webcam">
+            <input id="qcLoc" placeholder="Location (e.g. Living Room)">
+            <button class="btn btn-primary btn-full" style="font-size:11px;padding:7px" onclick="quickAddCamera()">Add camera</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="live-log">
+      <div class="log-header">
+        <h3>Recent events</h3>
+        <div style="display:flex;gap:7px">
+          <button class="btn btn-sm" onclick="refreshEvents()">Refresh</button>
+          <button class="btn btn-sm btn-danger" onclick="clearEvents()">Clear all</button>
+        </div>
+      </div>
+      <div id="logRows"></div>
+    </div>
+  </div>
+
+  <!-- EVENTS PAGE -->
+  <div class="page" id="page-events">
+    <div class="log">
+      <div class="log-header">
+        <h3>Event history</h3>
+        <div class="log-filters">
+          <select id="filterType" onchange="loadEvents()">
+            <option value="">All types</option>
+            <option value="fall_detected">Falls</option>
+            <option value="lying_motionless">Lying motionless</option>
+            <option value="inactivity">Inactivity</option>
+            <option value="zone_entry">Zone entry</option>
+            <option value="intruder_detected">Intruder</option>
+          </select>
+          <select id="filterLimit" onchange="loadEvents()">
+            <option value="25">Last 25</option>
+            <option value="50" selected>Last 50</option>
+            <option value="100">Last 100</option>
+          </select>
+        </div>
+      </div>
+      <div id="eventRows"></div>
+    </div>
+  </div>
+
+  <!-- ZONES PAGE -->
+  <div class="page" id="page-zones">
+    <div class="settings-grid">
+      <div class="zone-canvas-wrap">
+        <h3 style="margin-bottom:10px;font-size:14px;font-weight:700">Define zones</h3>
+        <p style="font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.6">Select a camera and zone type, then click points on the image to draw a polygon. <strong style="color:#ff6b85">Danger zones</strong> trigger an alert when a child enters. <strong style="color:#2ddd9a">Safe zones</strong> suppress lying/inactivity alerts (e.g. on a bed for sleeping).</p>
+        <div class="form-group">
+          <label>Camera</label>
+          <select id="zoneCamSelect" onchange="startZoneRefresh()" style="width:100%"></select>
+        </div>
+        <div class="form-group"><label>Zone name</label><input id="zoneName" placeholder="e.g. Kitchen stove area"></div>
+        <div class="form-group">
+          <label>Zone type</label>
+          <select id="zoneType" style="width:100%" onchange="drawZonePoints()">
+            <option value="danger">Danger — alert when child enters</option>
+            <option value="safe">Safe — no alerts for lying/inactivity here (e.g. bed)</option>
+          </select>
+        </div>
+        <div style="position:relative;width:100%;border-radius:9px;overflow:hidden;background:#050810;aspect-ratio:4/3;border:1px solid var(--border)">
+          <img id="zoneImg" src="" alt="" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;">
+          <canvas id="zoneCanvas" width="640" height="480" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;background:transparent"></canvas>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveZone()">Save zone</button>
+          <button class="btn" onclick="clearZonePoints()">Clear points</button>
+        </div>
+      </div>
+      <div>
+        <div class="settings-card">
+          <h3>Active zones</h3>
+          <div id="zoneList" class="zone-list"><p style="color:var(--text-2);font-size:12px">No zones defined yet.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERSONS PAGE -->
+  <div class="page" id="page-persons">
+    <div class="persons-layout">
+      <div>
+        <div id="faceRecStatusWrap" style="margin-bottom:6px"></div>
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Registered people</h3>
+        <p style="font-size:12px;color:var(--text-2);margin-bottom:18px;line-height:1.6">
+          People on this list can be identified by name on the live camera feed. Anyone whose face is detected but <strong>not on this list</strong> will be flagged as an <strong style="color:#ff6b85">intruder</strong> — the system will trigger a WhatsApp alert and highlight them in red on the feed.
+        </p>
+        <div id="personGrid" class="persons-grid">
+          <div class="persons-empty">
+            <strong>No people registered yet</strong>
+            Use the panel on the right to register your first person.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="settings-card">
+          <h3>Register a person</h3>
+          <p style="font-size:11px;color:var(--text-2);margin-bottom:16px;line-height:1.7">
+            Ask the person to stand in front of the selected camera, looking straight at it. Click <em>Capture</em> when they are clearly visible.
+          </p>
+          <div class="form-group"><label>Name</label><input id="newPersonName" placeholder="e.g. Grandma Siti" maxlength="40"></div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="newPersonCategory" style="width:100%">
+              <option value="elderly">Elderly</option>
+              <option value="adult" selected>Adult</option>
+              <option value="child">Child</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Capture from camera</label>
+            <select id="newPersonCamera" style="width:100%" onchange="startFacePreview()"></select>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label style="font-size:9px;color:var(--text-2);display:block;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;font-weight:600">Live preview</label>
+            <div id="facePreviewWrap" style="position:relative;width:100%;aspect-ratio:4/3;background:#050810;border:1px solid var(--border);border-radius:9px;overflow:hidden">
+              <img id="facePreviewImg" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
+              <canvas id="facePreviewCanvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+              <div id="facePreviewHint" style="position:absolute;left:10px;bottom:10px;font-size:10px;font-family:'JetBrains Mono',monospace;padding:4px 10px;border-radius:4px;letter-spacing:0.5px;background:rgba(0,0,0,0.7);color:var(--text-2)">SELECT A CAMERA</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full" onclick="registerPerson()" id="captureBtn" disabled style="margin-top:4px;opacity:0.5">
+            <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px"><circle cx="8" cy="8" r="3.2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 4h2l1-1.5h5l1 1.5h2A1.5 1.5 0 0 1 15 5.5v7A1.5 1.5 0 0 1 13.5 14h-11A1.5 1.5 0 0 1 1 12.5v-7A1.5 1.5 0 0 1 2.5 4z" stroke="currentColor" stroke-width="1.3"/></svg>
+            Capture from camera
+          </button>
+          <p style="font-size:10px;color:var(--text-3);margin-top:14px;font-family:'JetBrains Mono',monospace;line-height:1.6">
+            A small face thumbnail is saved so you can see who is registered. The embedding used for recognition is a 512-dimensional vector, not a photo.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTRUDERS GALLERY -->
+    <div style="margin-top:28px;padding-top:22px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap">
+        <div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:10px">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger-glow)"></span>
+            Intruders seen
+          </h3>
+          <p style="font-size:12px;color:var(--text-2);line-height:1.6;max-width:640px">People detected on camera whose face did not match anyone registered. Click <strong>Register</strong> to add them as a known person, or <strong>Dismiss</strong> to remove from this list.</p>
+        </div>
+        <label style="font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-family:'JetBrains Mono',monospace">
+          <input type="checkbox" id="intruderShowDismissed" onchange="loadIntruders()" style="accent-color:var(--primary)">
+          Show dismissed
+        </label>
+      </div>
+      <div id="intruderGrid" class="persons-grid">
+        <div class="persons-empty"><strong>No intruders recorded</strong>When the system sees someone it does not recognise, they will appear here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="page-settings">
+    <div class="settings-shell">
+
+      <aside class="set-nav" id="setNav">
+        <div class="set-nav-section">Detection</div>
+        <button class="set-nav-item active" data-subject="detection" onclick="showSubject('detection',this)">
+          <img src="/icons/Fall.svg" alt=""> Fall Detection
+        </button>
+        <button class="set-nav-item" data-subject="fire" onclick="showSubject('fire',this)">
+          <img src="/icons/Fire.svg" alt=""> Fire Detection
+        </button>
+        <button class="set-nav-item" data-subject="face" onclick="showSubject('face',this)">
+          <img src="/icons/Face.svg" alt=""> Face Detection
+        </button>
+        <div class="set-nav-section">System</div>
+        <button class="set-nav-item" data-subject="notify" onclick="showSubject('notify',this)">
+          <img src="/icons/Notifcation.svg" alt=""> Notification
+        </button>
+        <button class="set-nav-item" data-subject="cameras" onclick="showSubject('cameras',this)">
+          <img src="/icons/Camera.svg" alt=""> Camera
+        </button>
+        <button class="set-nav-item" data-subject="about" onclick="showSubject('about',this)">
+          <img src="/icons/LOGO.svg" alt=""> About
+        </button>
+      </aside>
+
+      <main class="set-content">
+
+      <!-- pane: Fall Detection (sensitivity + pose model + performance) -->
+      <section class="set-pane active" id="pane-detection">
+        <div class="set-pane-head">
+          <h2>Fall Detection</h2>
+          <p>Sensitivity, pose YOLO model, and shared engine knobs (image size, FPS, FP16).</p>
+        </div>
+      <div class="settings-card">
+        <div class="s-card-head">
+          <div class="s-icon icon-violet">
+            <img src="/icons/Fall.svg" alt="">
+          </div>
+          <div class="s-head-text">
+            <h3>Fall sensitivity</h3>
+            <p>Fall confidence threshold, inactivity timeout, and alert cooldown.</p>
+          </div>
+        </div>
+        <div class="slider-group">
+          <div class="slider-head">
+            <label>Fall confidence threshold</label>
+            <span class="slider-val" id="setThresholdVal">80</span>
+          </div>
+          <input type="range" class="slider" id="setThreshold" min="50" max="99" value="80" oninput="updateSlider(this,'setThresholdVal')">
+        </div>
+        <div class="form-group"><label>Inactivity timeout (seconds)</label><input type="number" id="setInactivity" min="60" max="3600" value="300"></div>
+        <div class="form-group"><label>Alert cooldown (seconds)</label><input type="number" id="setCooldown" min="10" max="600" value="60"></div>
+      </div>
+      <div class="settings-card">
+        <div class="s-card-head">
+          <div class="s-icon icon-blue">
+            <img src="/icons/Detection.svg" alt="">
+          </div>
+          <div class="s-head-text">
+            <h3>Pose Model &amp; Performance</h3>
+            <p>Choose the YOLO pose weights, image size, FPS cap and FP16.</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>YOLO pose model</label>
+          <select id="setModel">
+            <option value="">— scanning weights folder —</option>
+          </select>
+          <p style="font-size:10px;color:var(--text-3);margin-top:6px;font-family:'JetBrains Mono',monospace">Lists every <code>*.pt</code> file under <code>Fall_Detection/weights/</code>.</p>
+        </div>
+        <div class="slider-group">
+          <div class="slider-head">
+            <label>Detection confidence</label>
+            <span class="slider-val" id="setYoloConfVal">50</span>
+          </div>
+          <input type="range" class="slider" id="setYoloConf" min="10" max="95" value="50" oninput="updateSlider(this,'setYoloConfVal')">
+        </div>
+        <div class="form-group">
+          <label>Input image size <small style="color:var(--text-3)">(multiple of 32)</small></label>
+          <select id="setImgsz">
+            <option value="320">320 — fastest</option><option value="480">480</option>
+            <option value="640" selected>640 — default</option>
+            <option value="960">960</option><option value="1280">1280 — most accurate</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Processing FPS</label><input type="number" id="setFps" min="1" max="60" value="15"></div>
+        <div class="form-group">
+          <label>FP16 half-precision (GPU only)</label>
+          <div class="radio-group">
+            <label class="radio-opt">
+              <input type="radio" name="fp16" value="true" checked>
+              <span class="radio-mark"></span>
+              <span class="radio-text">Enabled <small>~2× faster on supported GPUs</small></span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="fp16" value="false">
+              <span class="radio-mark"></span>
+              <span class="radio-text">Disabled <small>Safer fallback for older hardware</small></span>
+            </label>
+          </div>
+        </div>
+        <p style="font-size:10px;color:var(--text-2);margin-bottom:12px;font-family:'JetBrains Mono',monospace;line-height:1.6">⚠ Model &amp; image size changes take effect after restarting the system.</p>
+      </div>
+      </section>
+
+      <!-- pane: Fire Detection -->
+      <section class="set-pane" id="pane-fire">
+        <div class="set-pane-head">
+          <h2>Fire detection</h2>
+          <p>Run a YOLO model dedicated to fire and smoke classes.</p>
+        </div>
+      <div class="settings-card">
+        <div class="s-card-head">
+          <div class="s-icon icon-red">
+            <img src="/icons/Fire.svg" alt="">
+          </div>
+          <div class="s-head-text">
+            <h3>Fire detection</h3>
+            <p>Run fire/smoke YOLO model and tune its confidence + classes.</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Enable fire detection</label>
+          <div class="radio-group">
+            <label class="radio-opt">
+              <input type="radio" name="fireEnabled" value="true" checked>
+              <span class="radio-mark"></span>
+              <span class="radio-text">Enabled <small>Run fire/smoke YOLO model on every frame</small></span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="fireEnabled" value="false">
+              <span class="radio-mark"></span>
+              <span class="radio-text">Disabled <small>Skip fire inference (saves ~30–40% GPU)</small></span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Fire YOLO model</label>
+          <select id="setFireModel">
+            <option value="">— scanning Fire_Detection folder —</option>
+          </select>
+          <p style="font-size:10px;color:var(--text-3);margin-top:6px;font-family:'JetBrains Mono',monospace">Lists every <code>*.pt</code> under <code>Fire_Detection/</code>.</p>
+        </div>
+        <div class="slider-group">
+          <div class="slider-head">
+            <label>Fire confidence threshold</label>
+            <span class="slider-val" id="setFireConfVal">35</span>
+          </div>
+          <input type="range" class="slider" id="setFireConf" min="10" max="95" value="35" oninput="updateSlider(this,'setFireConfVal')">
+        </div>
+        <div class="form-group">
+          <label>Alert classes (comma-separated)</label>
+          <input id="setFireClasses" placeholder="fire,smoke">
+          <p style="font-size:10px;color:var(--text-3);margin-top:6px;font-family:'JetBrains Mono',monospace">Class names from the YOLO model that should trigger alerts.</p>
+        </div>
+        <div class="form-group"><label>Alert cooldown per class (seconds)</label><input type="number" id="setFireCooldown" min="1" max="120" value="5"></div>
+      </div>
+      </section>
+
+      <!-- pane: Face -->
+      <section class="set-pane" id="pane-face">
+        <div class="set-pane-head">
+          <h2>Face recognition</h2>
+          <p>InsightFace ArcFace matching and intruder alerts.</p>
+        </div>
+      <div class="settings-card">
+        <div class="s-card-head">
+          <div class="s-icon icon-orange">
+            <img src="/icons/Face.svg" alt="">
+          </div>
+          <div class="s-head-text">
+            <h3>Face recognition</h3>
+            <p>InsightFace ArcFace matching and intruder detection.</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Enable face recognition</label>
+          <div class="radio-group">
+            <label class="radio-opt">
+              <input type="radio" name="faceEnabled" value="true" checked>
+              <span class="radio-mark"></span>
+              <span class="radio-text">Enabled <small>InsightFace ArcFace + intruder detection</small></span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="faceEnabled" value="false">
+              <span class="radio-mark"></span>
+              <span class="radio-text">Disabled <small>Skip face inference (saves CPU/GPU)</small></span>
+            </label>
+          </div>
+        </div>
+        <div class="slider-group">
+          <div class="slider-head">
+            <label>Match threshold</label>
+            <span class="slider-val" id="setFaceMatchVal">42</span>
+          </div>
+          <input type="range" class="slider" id="setFaceMatch" min="20" max="80" value="42" oninput="updateSlider(this,'setFaceMatchVal')">
+          <p style="font-size:10px;color:var(--text-3);margin-top:6px;font-family:'JetBrains Mono',monospace">Cosine similarity. Lower = more permissive matches. Higher = stricter (more intruders flagged).</p>
+        </div>
+        <div class="form-group">
+          <label>Run face every N frames</label>
+          <input type="number" id="setFaceEveryN" min="1" max="60" value="5">
+          <p style="font-size:10px;color:var(--text-3);margin-top:6px;font-family:'JetBrains Mono',monospace">Higher = faster pipeline but slower face refresh. 5 ≈ once per ~150 ms at 30 FPS.</p>
+        </div>
+        <div class="form-group"><label>Intruder cooldown (seconds)</label><input type="number" id="setIntruderCooldown" min="5" max="600" value="30"></div>
+        <p id="faceStatusHint" style="font-size:10px;color:var(--text-2);margin-bottom:12px;font-family:'JetBrains Mono',monospace;line-height:1.6">Status will appear here after saving.</p>
+      </div>
+      </section>
+
+      <!-- pane: Notifications -->
+      <section class="set-pane" id="pane-notify">
+        <div class="set-pane-head">
+          <h2>Notifications</h2>
+          <p>Send critical alerts to one or more WhatsApp numbers via Twilio.</p>
+        </div>
+      <div class="settings-card">
+        <div class="s-card-head">
+          <div class="s-icon icon-green">
+            <img src="/icons/Notifcation.svg" alt="">
+          </div>
+          <div class="s-head-text">
+            <h3>WhatsApp notifications</h3>
+            <p>Send critical alerts to one or more phone numbers via Twilio.</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Phone numbers (comma-separated, with country code)</label>
+          <textarea id="setPhones" rows="3" placeholder="+60123456789, +60198765432"></textarea>
+        </div>
+        <p style="font-size:10px;color:var(--text-2);margin-bottom:12px;font-family:'JetBrains Mono',monospace;line-height:1.6">Configure Twilio credentials in the .env file. Numbers must be registered in your Twilio WhatsApp sandbox.</p>
+      </div>
+      </section>
+
+      <!-- pane: Cameras -->
+      <section class="set-pane" id="pane-cameras">
+        <div class="set-pane-head">
+          <h2>Cameras</h2>
+          <p>Add, list, and remove RTSP / USB / file-based camera sources.</p>
+        </div>
+      <div class="settings-card">
+        <div class="s-card-head">
+          <div class="s-icon icon-blue">
+            <img src="/icons/Camera.svg" alt="">
+          </div>
+          <div class="s-head-text">
+            <h3>Camera management</h3>
+            <p>Add, list, and remove RTSP / USB / file-based camera sources.</p>
+          </div>
+        </div>
+        <div id="camList" class="cam-list"></div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <h4 style="font-size:9px;margin-bottom:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace">Add camera</h4>
+          <div class="form-group"><label>Name</label><input id="newCamName" placeholder="Living Room"></div>
+          <div class="form-group"><label>RTSP URL (or 0 for webcam)</label><input id="newCamUrl" placeholder="rtsp://admin:pass@192.168.1.100:554/stream1"></div>
+          <div class="form-group"><label>Location</label><input id="newCamLoc" placeholder="Living Room"></div>
+          <button class="btn btn-primary" onclick="addCamera()">Add camera</button>
+        </div>
+      </div>
+      </section>
+
+      <!-- pane: About -->
+      <section class="set-pane" id="pane-about">
+        <div class="set-pane-head">
+          <h2>About</h2>
+          <p>Project information and credits.</p>
+        </div>
+      <div class="settings-card">
+        <div class="s-card-head">
+          <div class="s-icon icon-amber">
+            <img src="/icons/LOGO.svg" alt="">
+          </div>
+          <div class="s-head-text">
+            <h3>About HomeShield</h3>
+            <p>Project, detection stack and architecture credits.</p>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-2);line-height:1.9;font-family:'JetBrains Mono',monospace">
+          <strong style="color:var(--text)">HomeShield</strong> is a centralized dashboard for real-time CCTV monitoring and machine-learning-powered anomaly detection. One unified pipeline runs three GPU-accelerated detectors on every camera feed, draws bounding-box overlays on the live MJPEG stream, persists every alert to SQLite with an annotated snapshot, and pushes updates to this dashboard via Server-Sent Events.<br><br>
+
+          <span style="color:var(--text)">Detection stack</span><br>
+          &nbsp;&nbsp;🤸 <strong>Fall</strong> — YOLO11 / YOLO26 pose estimation feeds a 7-state finite-state machine (Standing → Walking → Sitting → Fall_Detected → Lying_After_Fall → Lying_Motionless → Inactivity). Two-stage decision (peak descent velocity + sustained horizontal posture) rejects controlled sit-downs.<br>
+          &nbsp;&nbsp;🔥 <strong>Fire</strong> — custom YOLO weights covering fire and smoke classes, with per-class cooldown to debounce alerts.<br>
+          &nbsp;&nbsp;👤 <strong>Face</strong> — InsightFace ArcFace (buffalo_l) producing 512-dimensional embeddings, cosine-matched against the registered Persons gallery; unknown faces are auto-logged to the Intruders list.<br>
+          &nbsp;&nbsp;🚧 <strong>Zones</strong> — polygon zones per camera. Safe zones suppress lying / inactivity alerts (e.g. on a bed); danger zones trigger a child-entry alert.<br><br>
+
+          <span style="color:var(--text)">Architecture</span><br>
+          Per-camera worker threads share one set of YOLO / ONNX models loaded on GPU. Frame skipping (fire every 2nd frame, face every 5th) keeps pose running on every frame. Non-blocking event publishing offloads JPEG encoding + SQLite writes to a daemon thread so the capture loop never waits on disk I/O.<br><br>
+
+          <span style="color:var(--text)">Tech stack</span><br>
+          &nbsp;&nbsp;• Backend: Python 3.11, PyTorch + CUDA, Ultralytics YOLO, InsightFace + ONNX Runtime GPU<br>
+          &nbsp;&nbsp;• Vision: OpenCV, NumPy<br>
+          &nbsp;&nbsp;• Web: Flask, MJPEG (multipart/x-mixed-replace), Server-Sent Events<br>
+          &nbsp;&nbsp;• Storage: SQLite (WAL mode), filesystem snapshots<br><br>
+
+          <span style="color:var(--text)">Version:</span> 2.0.0 (Combined Fall + Fire + Face)<br>
+          <span style="color:var(--text)">Developer:</span> Mohammad Salehuddin bin Iwan<br>
+          <span style="color:var(--text)">Supervisor:</span> Andi Fitriah binti Abdul Kadir<br>
+          <span style="color:var(--text)">Institution:</span> IIUM, Kulliyyah of Information and Communication Technology<br>
+          <span style="color:var(--text)">Project:</span> Final Year Project — HomeShield: Centralized Dashboard for Real-Time CCTV Monitoring and Anomaly Detection
+        </p>
+      </div>
+      </section>
+
+      </main>
+
+    </div>
+
+    <div class="save-bar" id="saveBar">
+      <div class="save-status">
+        <span class="save-dot"></span>
+        <span id="saveBarMsg">You have unsaved changes</span>
+      </div>
+      <div class="save-actions">
+        <button class="btn" onclick="discardChanges()">Discard</button>
+        <button class="btn btn-primary" onclick="saveAllSettings()">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<!-- Snapshot modal -->
+<div class="modal-overlay" id="snapshotModal" onclick="this.classList.remove('show')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="modalTitle">Event snapshot</h3>
+    <img id="modalImg" src="" alt="snapshot">
+    <p id="modalInfo"></p>
+  </div>
+</div>
+
+<script>
+const API = '';
+let currentPage = 'live';
+let zonePoints = [];
+let statusInterval, eventInterval;
+let selectedCamId = null;
+let cameraData = {};
+
+const pageTitles = {live:'Live feeds',events:'Event history',zones:'Zone configuration',persons:'Registered persons',settings:'System settings'};
+
+function showPage(page, btn) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('topbarTitle').textContent = pageTitles[page] || page;
+  if (page === 'events') loadEvents();
+  if (page === 'zones') { loadZoneCameras(); loadZones(); } else { stopZoneRefresh(); }
+  if (page === 'persons') { loadPersons(); loadIntruders(); populatePersonCameraSelect(); }
+  else { stopFacePreview(); }
+  if (page === 'settings') { loadSettings(); loadCameraList(); }
+  if (window.innerWidth <= 900) closeSidebar();
+}
+
+function toggleSidebar() {
+  const sb = document.querySelector('.sidebar');
+  const bd = document.getElementById('sidebarBackdrop');
+  if (!sb || !bd) return;
+  const willOpen = !sb.classList.contains('open');
+  sb.classList.toggle('open', willOpen);
+  bd.classList.toggle('show', willOpen);
+  document.body.style.overflow = willOpen ? 'hidden' : '';
+}
+function closeSidebar() {
+  const sb = document.querySelector('.sidebar');
+  const bd = document.getElementById('sidebarBackdrop');
+  if (!sb || !bd) return;
+  sb.classList.remove('open');
+  bd.classList.remove('show');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.querySelector('.sidebar')?.classList.contains('open')) closeSidebar();
+});
+window.addEventListener('resize', () => { if (window.innerWidth > 900) closeSidebar(); });
+
+function toggleSystem() {
+  const btn = document.getElementById('toggleBtn');
+  const running = btn.textContent.includes('Stop');
+  fetch(API + '/api/system/' + (running ? 'stop' : 'start'), {method:'POST'})
+    .then(r => r.json()).then(() => pollStatus());
+}
+
+function pollStatus() {
+  fetch(API + '/api/status').then(r => r.json()).then(data => {
+    const camStr = data.cameras_online + ' / ' + data.cameras_total;
+    document.getElementById('m-cameras').textContent = camStr;
+    document.getElementById('m-alerts').textContent = data.alerts_today;
+    document.getElementById('m-people').textContent = data.people_count;
+    document.getElementById('m-status').textContent = data.running ? 'Active' : 'Stopped';
+    document.getElementById('m-status').className = 'metric-value ' + (data.running ? 'success' : 'danger');
+    document.getElementById('tb-cameras').textContent = camStr;
+    document.getElementById('tb-alerts').textContent = data.alerts_today;
+    document.getElementById('tb-people').textContent = data.people_count;
+
+    const dot = document.getElementById('statusDot');
+    dot.className = 'status-dot' + (data.running ? '' : ' off');
+    document.getElementById('statusText').textContent = data.running ? 'Running' : 'Stopped';
+    document.getElementById('toggleBtn').textContent = data.running ? 'Stop system' : 'Start system';
+    document.getElementById('toggleBtn').className = 'btn btn-full ' + (data.running ? 'btn-danger' : 'btn-primary');
+
+    cameraData = data.cameras;
+    updateFeedsHero(data.cameras);
+
+    // average FPS across active cameras (sidebar pill)
+    const camIds = Object.keys(data.cameras || {});
+    const fpsList = camIds
+      .map(k => parseFloat(data.cameras[k].fps))
+      .filter(v => !isNaN(v) && v > 0);
+    const fpsEl = document.getElementById('fpsText');
+    const dotEl = document.getElementById('fpsDot');
+    if (fpsList.length === 0) {
+      if (fpsEl) fpsEl.textContent = '--';
+      if (dotEl) { dotEl.style.background = 'var(--text-3)'; dotEl.style.boxShadow = 'none'; }
+    } else {
+      const avg = fpsList.reduce((a,b)=>a+b,0) / fpsList.length;
+      const max = Math.max(...fpsList);
+      const min = Math.min(...fpsList);
+      if (fpsEl) fpsEl.textContent = (camIds.length > 1)
+        ? `${avg.toFixed(1)}  (${min.toFixed(0)}–${max.toFixed(0)})`
+        : avg.toFixed(1);
+      if (dotEl) {
+        // colour the dot by FPS health: green ≥20, amber ≥10, red below
+        const c = avg >= 20 ? 'var(--success)' : avg >= 10 ? 'var(--warning)' : 'var(--danger)';
+        const g = avg >= 20 ? 'var(--success-glow)' : avg >= 10 ? 'rgba(245,158,11,0.4)' : 'var(--danger-glow)';
+        dotEl.style.background = c;
+        dotEl.style.boxShadow = `0 0 8px ${g}`;
+      }
+    }
+  }).catch(err => console.error('pollStatus failed:', err));
+}
+
+function updateFeedsHero(cameras) {
+  const ids = Object.keys(cameras);
+  const panel = document.getElementById('thumbPanel');
+  const heroScreen = document.getElementById('heroScreen');
+
+  if (ids.length === 0) {
+    panel.innerHTML = '';
+    heroScreen.innerHTML = '<span style="color:var(--text-3);font-size:12px;font-family:\'JetBrains Mono\',monospace">No cameras configured</span>';
+    return;
+  }
+
+  if (!selectedCamId || !cameras[selectedCamId]) selectedCamId = ids[0];
+
+  const hero = cameras[selectedCamId];
+  const dotClass = hero.active ? 'live-dot' : 'live-dot offline';
+  const pillStyle = hero.active ? '' : 'opacity:0.55';
+  const pillLabel = hero.active ? 'LIVE' : 'OFFLINE';
+
+  let overlayHTML = `<div class="hero-overlay"><div class="live-pill" style="${pillStyle}"><div class="${dotClass}"></div><span>${pillLabel}</span></div></div>`;
+  if (hero.active) {
+    heroScreen.innerHTML = overlayHTML + `<img src="/video_feed/${selectedCamId}" alt="${hero.name}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">`;
+  } else {
+    heroScreen.innerHTML = overlayHTML + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M3 3l18 18M10.5 6.5A4 4 0 0116 12m-1.5 3.5A4 4 0 018 12M2 2l20 20" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round"/><rect x="2" y="5" width="20" height="14" rx="2" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/></svg><span style="color:var(--text-3);font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:1px">CAMERA OFFLINE</span></div>`;
+  }
+  document.getElementById('heroCamName').textContent = hero.name;
+  document.getElementById('heroCamLoc').textContent = hero.location || '–';
+  const hb = document.getElementById('heroBadge');
+  hb.className = 'feed-badge ' + (hero.active ? 'live' : 'alert');
+  hb.textContent = hero.active ? 'LIVE' : 'OFFLINE';
+
+  if (panel.children.length !== ids.length) {
+    panel.innerHTML = '';
+    ids.forEach(cid => {
+      const cam = cameras[cid];
+      const card = document.createElement('div');
+      card.className = 'thumb-card' + (cid === selectedCamId ? ' selected' : '') + (!cam.active ? ' alert-cam' : '');
+      card.id = 'thumb-' + cid;
+      card.onclick = () => selectHero(cid);
+      card.innerHTML = `
+        <div class="thumb-screen">
+          <img src="/video_feed/${cid}" alt="${cam.name}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.outerHTML='<div class=thumb-offline>Offline</div>'">
+        </div>
+        <div class="thumb-bar">
+          <span class="thumb-name">${cam.name}</span>
+          <span class="feed-badge ${cam.active ? 'live' : 'alert'}" id="tbadge-${cid}">${cam.active ? 'LIVE' : 'OFF'}</span>
+        </div>`;
+      panel.appendChild(card);
+    });
+  } else {
+    ids.forEach(cid => {
+      const card = document.getElementById('thumb-' + cid);
+      if (!card) return;
+      card.className = 'thumb-card' + (cid === selectedCamId ? ' selected' : '') + (!cameras[cid].active ? ' alert-cam' : '');
+      const badge = document.getElementById('tbadge-' + cid);
+      if (badge) { badge.className = 'feed-badge ' + (cameras[cid].active ? 'live' : 'alert'); badge.textContent = cameras[cid].active ? 'LIVE' : 'OFF'; }
+    });
+  }
+}
+
+function selectHero(cid) {
+  selectedCamId = cid;
+  updateFeedsHero(cameraData);
+}
+
+function refreshEvents() { loadRecentEvents(); }
+
+function loadRecentEvents() {
+  fetch(API + '/api/events?limit=10').then(r => r.json()).then(events => {
+    document.getElementById('logRows').innerHTML = events.map(e => eventRow(e)).join('');
+  });
+}
+
+function loadEvents() {
+  const type = document.getElementById('filterType').value;
+  const limit = document.getElementById('filterLimit').value;
+  let url = API + '/api/events?limit=' + limit;
+  if (type) url += '&type=' + type;
+  fetch(url).then(r => r.json()).then(events => {
+    document.getElementById('eventRows').innerHTML = events.map(e => eventRow(e)).join('');
+  });
+}
+
+function eventRow(e) {
+  const badges = {
+    fall_detected:    ['badge-yellow', '🤸 Fall detected'],
+    lying_motionless: ['badge-danger', '⚠ Lying motionless'],
+    inactivity:       ['badge-yellow', '💤 Inactivity'],
+    zone_entry:       ['badge-orange', '🚧 Child in danger zone'],
+    intruder_detected:['badge-orange', '👤 Intruder detected'],
+    fire_detected:    ['badge-danger', '🔥 Fire detected'],
+    normal:           ['badge-success','✓ Normal'],
+    system:           ['badge-info',   'ℹ System'],
+  };
+  const [cls, label] = badges[e.event_type] || ['badge-info', e.event_type];
+  const time = e.created_at ? new Date(e.created_at).toLocaleString() : '';
+  const snap = e.snapshot_path ? `<img class="log-snap" src="/snapshots/${e.snapshot_path}" onclick="showSnapshot('${e.snapshot_path}','${label}','${time}')">` : '';
+  // Only show the person category if it's a meaningful one (adult/child/elderly).
+  // Fire / system / intruder events don't have a person, so we skip "unknown".
+  const personPart = (e.person_category && e.person_category !== 'unknown')
+    ? `${e.person_category} — ` : '';
+  return `<div class="log-row">
+    <span class="badge ${cls}">${label}</span>
+    <span class="log-desc">${personPart}${e.camera_name||'Unknown'} ${e.details?'('+e.details+')':''}</span>
+    <span class="log-conf">${(e.confidence*100).toFixed(0)}%</span>
+    <span class="log-time">${time}</span>
+    ${snap}
+  </div>`;
+}
+
+function showSnapshot(path, title, time) {
+  document.getElementById('modalImg').src = '/snapshots/' + path;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalInfo').textContent = time;
+  document.getElementById('snapshotModal').classList.add('show');
+}
+
+function loadZoneCameras() {
+  fetch(API + '/api/cameras').then(r => r.json()).then(cams => {
+    const sel = document.getElementById('zoneCamSelect');
+    sel.innerHTML = cams.map(c => `<option value="${c.camera_id}">${c.name} — ${c.location}</option>`).join('');
+    startZoneRefresh();
+  });
+}
+
+function loadZoneFrame() {
+  const cid = document.getElementById('zoneCamSelect').value;
+  if (!cid) return;
+  document.getElementById('zoneImg').src = '/frame_snap/' + cid + '?t=' + Date.now();
+}
+
+let zoneRefreshTimer = null;
+function startZoneRefresh() { stopZoneRefresh(); loadZoneFrame(); zoneRefreshTimer = setInterval(loadZoneFrame, 2000); }
+function stopZoneRefresh() { if (zoneRefreshTimer) { clearInterval(zoneRefreshTimer); zoneRefreshTimer = null; } }
+
+document.getElementById('zoneCanvas').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  zonePoints.push([Math.round((e.clientX-rect.left)*640/rect.width), Math.round((e.clientY-rect.top)*480/rect.height)]);
+  drawZonePoints();
+});
+
+function drawZonePoints() {
+  const canvas = document.getElementById('zoneCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,640,480);
+  const zt = document.getElementById('zoneType');
+  const isSafe = zt && zt.value === 'safe';
+  const strokeColor = isSafe ? '#2ddd9a' : '#ff3b60';
+  const fillColor   = isSafe ? 'rgba(13,217,138,0.14)' : 'rgba(255,59,96,0.14)';
+  if (zonePoints.length > 0) {
+    ctx.beginPath(); ctx.moveTo(zonePoints[0][0],zonePoints[0][1]);
+    zonePoints.forEach(p => ctx.lineTo(p[0],p[1]));
+    ctx.closePath(); ctx.strokeStyle=strokeColor; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle=fillColor; ctx.fill();
+    zonePoints.forEach(p => { ctx.beginPath(); ctx.arc(p[0],p[1],5,0,Math.PI*2); ctx.fillStyle=strokeColor; ctx.fill(); });
+  }
+}
+function clearZonePoints() { zonePoints=[]; drawZonePoints(); }
+
+function saveZone() {
+  if (zonePoints.length < 3) return alert('Draw at least 3 points');
+  const zoneType = document.getElementById('zoneType').value;
+  const defaultName = zoneType === 'safe' ? 'Safe Zone' : 'Danger Zone';
+  const data = {
+    zone_name: document.getElementById('zoneName').value || defaultName,
+    camera_id: parseInt(document.getElementById('zoneCamSelect').value),
+    polygon:   zonePoints,
+    zone_type: zoneType,
+  };
+  fetch(API+'/api/zones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(()=>{clearZonePoints();loadZones();alert('Zone saved!');});
+}
+
+function loadZones() {
+  fetch(API+'/api/zones').then(r=>r.json()).then(zones=>{
+    const c=document.getElementById('zoneList');
+    if (!zones.length){c.innerHTML='<p style="color:var(--text-2);font-size:12px">No zones defined yet.</p>';return;}
+    c.innerHTML=zones.map(z=>{
+      const isSafe = z.zone_type === 'safe';
+      const badge = isSafe
+        ? '<span style="background:rgba(13,217,138,0.18);color:#2ddd9a;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:0.5px;font-family:JetBrains Mono,monospace;margin-right:6px">SAFE</span>'
+        : '<span style="background:rgba(255,59,96,0.18);color:#ff6b85;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:0.5px;font-family:JetBrains Mono,monospace;margin-right:6px">DANGER</span>';
+      return `<div class="zone-item"><span>${badge}<strong>${z.zone_name}</strong> — Camera ${z.camera_id} (${z.polygon.length} pts)</span><button class="btn btn-sm" onclick="deleteZone(${z.zone_id})">Delete</button></div>`;
+    }).join('');
+  });
+}
+function deleteZone(id) { fetch(API+'/api/zones/'+id,{method:'DELETE'}).then(()=>loadZones()); }
+
+function loadPersons() {
+  fetch(API+'/api/persons').then(r=>r.json()).then(d=>{
+    const enabled = d.face_rec_enabled;
+    const wrap = document.getElementById('faceRecStatusWrap');
+    if (wrap) {
+      wrap.innerHTML = enabled
+        ? '<span class="fr-status-pill"><span class="fr-dot on"></span>Face recognition active</span>'
+        : '<span class="fr-status-pill"><span class="fr-dot off"></span>Face recognition disabled — install <code style="color:var(--text);font-family:JetBrains Mono,monospace">insightface</code> and <code style="color:var(--text);font-family:JetBrains Mono,monospace">onnxruntime-gpu</code></span>';
+    }
+    const grid = document.getElementById('personGrid');
+    const persons = d.persons || [];
+    if (!persons.length) {
+      grid.innerHTML = '<div class="persons-empty"><strong>No people registered yet</strong>Use the panel on the right to register your first person.</div>';
+      return;
+    }
+    grid.innerHTML = persons.map(p => {
+      const initial = (p.name || '?').trim().charAt(0).toUpperCase();
+      const imgSrc = p.photo_url ? `${p.photo_url}?t=${Date.now()}` : '';
+      const photoEl = imgSrc
+        ? `<img class="person-photo" src="${imgSrc}" alt="${escapeHtml(p.name)}" onerror="this.outerHTML='<div class=&quot;person-photo-placeholder&quot;>${initial}</div>'">`
+        : `<div class="person-photo-placeholder">${initial}</div>`;
+      const catClass = {elderly:'cat-elderly', adult:'cat-adult', child:'cat-child'}[p.category] || 'cat-adult';
+      return `
+        <div class="person-card">
+          ${photoEl}
+          <div class="person-body">
+            <div class="person-name">${escapeHtml(p.name)}</div>
+            <div class="person-actions">
+              <span class="cat-pill ${catClass}">${p.category.toUpperCase()}</span>
+              <button class="person-delete" onclick="deletePerson(${p.person_id}, '${escapeHtml(p.name).replace(/'/g,"\\'")}')">Remove</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  });
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function registerPerson() {
+  const nameEl = document.getElementById('newPersonName');
+  const name   = nameEl.value.trim();
+  const category = document.getElementById('newPersonCategory').value;
+  const camSel   = document.getElementById('newPersonCamera');
+  const camId    = camSel && camSel.value ? parseInt(camSel.value) : null;
+  if (!name)  { nameEl.focus(); return alert('Enter a name'); }
+  if (!camId) return alert('Select a camera');
+
+  const btn = document.getElementById('captureBtn');
+  const prev = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Capturing…';
+
+  fetch(API+'/api/persons', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name, category, camera_id: camId}),
+  }).then(r => r.json().then(body => ({ok: r.ok, body})))
+    .then(({ok, body}) => {
+      btn.disabled = false; btn.innerHTML = prev;
+      if (!ok || body.error) { alert(body.error || 'Registration failed'); return; }
+      nameEl.value = '';
+      const ageStr = body.detected_age != null ? ` (detected age ≈ ${body.detected_age})` : '';
+      loadPersons();
+      showToast(`Registered ${body.name}${ageStr}`);
+    }).catch(err => {
+      btn.disabled = false; btn.innerHTML = prev;
+      alert('Registration failed: ' + err);
+    });
+}
+
+function deletePerson(id, name) {
+  if (!confirm(`Remove ${name} from the registry? They will be flagged as an intruder on next detection.`)) return;
+  fetch(API+'/api/persons/'+id, {method:'DELETE'}).then(()=>loadPersons());
+}
+
+function populatePersonCameraSelect() {
+  fetch(API+'/api/cameras').then(r=>r.json()).then(cams=>{
+    const sel = document.getElementById('newPersonCamera');
+    if (!sel) return;
+    if (!cams.length) {
+      sel.innerHTML = '<option value="">No cameras configured</option>';
+      stopFacePreview();
+      return;
+    }
+    sel.innerHTML = cams.map(c => `<option value="${c.camera_id}">${escapeHtml(c.name)}${c.location ? ' — ' + escapeHtml(c.location) : ''}</option>`).join('');
+    startFacePreview();
+  });
+}
+
+let _facePreviewTimer = null;
+let _faceDetectTimer  = null;
+let _lastFaceDetect   = null;
+
+function startFacePreview() {
+  stopFacePreview();
+  const sel = document.getElementById('newPersonCamera');
+  if (!sel || !sel.value) return;
+  const camId = parseInt(sel.value);
+
+  const img = document.getElementById('facePreviewImg');
+  const hint = document.getElementById('facePreviewHint');
+  const refreshFrame = () => { img.src = `${API}/frame_snap/${camId}?t=${Date.now()}`; };
+  refreshFrame();
+  _facePreviewTimer = setInterval(refreshFrame, 200);
+
+  const runDetect = () => {
+    fetch(`${API}/api/detect_face/${camId}`).then(r=>r.json()).then(d=>{
+      _lastFaceDetect = d;
+      drawFacePreviewOverlay(d);
+      updateFaceHint(d);
+    }).catch(() => {});
+  };
+  runDetect();
+  _faceDetectTimer = setInterval(runDetect, 600);
+  hint.textContent = 'LOOKING FOR A FACE…';
+  hint.style.color = 'var(--text-2)';
+}
+
+function stopFacePreview() {
+  if (_facePreviewTimer) clearInterval(_facePreviewTimer);
+  if (_faceDetectTimer)  clearInterval(_faceDetectTimer);
+  _facePreviewTimer = _faceDetectTimer = null;
+  _lastFaceDetect = null;
+  setCaptureEnabled(false);
+  const canvas = document.getElementById('facePreviewCanvas');
+  if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawFacePreviewOverlay(d) {
+  const wrap   = document.getElementById('facePreviewWrap');
+  const canvas = document.getElementById('facePreviewCanvas');
+  if (!wrap || !canvas) return;
+  const dispW = wrap.clientWidth, dispH = wrap.clientHeight;
+  if (canvas.width !== dispW || canvas.height !== dispH) {
+    canvas.width = dispW; canvas.height = dispH;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!d || !d.face || !d.width || !d.height) return;
+
+  const f = d.face;
+  const scale = Math.max(dispW / d.width, dispH / d.height);
+  const offX  = (dispW - d.width * scale) / 2;
+  const offY  = (dispH - d.height * scale) / 2;
+  const x = f.x * scale + offX;
+  const y = f.y * scale + offY;
+  const w = f.w * scale;
+  const h = f.h * scale;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(13,217,138,0.7)';
+  ctx.shadowBlur  = 8;
+  ctx.strokeStyle = '#0dd98a';
+  ctx.lineWidth   = 2.5;
+  ctx.strokeRect(x, y, w, h);
+  ctx.restore();
+
+  const cl = Math.min(18, w * 0.22);
+  ctx.strokeStyle = '#0dd98a';
+  ctx.lineWidth   = 3;
+  ctx.beginPath();
+  [[x, y], [x + w, y], [x, y + h], [x + w, y + h]].forEach(([cx, cy], i) => {
+    const sx = i % 2 === 0 ? 1 : -1;
+    const sy = i < 2 ? 1 : -1;
+    ctx.moveTo(cx, cy + cl * sy); ctx.lineTo(cx, cy); ctx.lineTo(cx + cl * sx, cy);
+  });
+  ctx.stroke();
+}
+
+function updateFaceHint(d) {
+  const hint = document.getElementById('facePreviewHint');
+  if (!hint) return;
+  if (!d || d.error === 'no_frame') {
+    hint.textContent = 'CAMERA OFFLINE'; hint.style.color = '#f87171'; setCaptureEnabled(false); return;
+  }
+  if (d.error === 'face_rec_disabled') {
+    hint.textContent = 'FACE RECOGNITION DISABLED'; hint.style.color = '#f87171'; setCaptureEnabled(false); return;
+  }
+  if (!d.face) {
+    hint.textContent = 'NO FACE — LOOK AT THE CAMERA'; hint.style.color = '#fb923c'; setCaptureEnabled(false); return;
+  }
+  const frac = d.face.h / d.height;
+  if (frac < 0.10) {
+    hint.textContent = 'MOVE CLOSER'; hint.style.color = '#fb923c'; setCaptureEnabled(false); return;
+  }
+  hint.textContent = d.face.age != null ? `FACE OK • ~${d.face.age}y` : 'FACE OK';
+  hint.style.color = '#0dd98a';
+  setCaptureEnabled(true);
+}
+
+function setCaptureEnabled(yes) {
+  const btn = document.getElementById('captureBtn');
+  if (!btn) return;
+  btn.disabled = !yes;
+  btn.style.opacity = yes ? '1' : '0.5';
+  btn.style.cursor  = yes ? 'pointer' : 'not-allowed';
+}
+
+function loadIntruders() {
+  const showDismissed = document.getElementById('intruderShowDismissed')?.checked;
+  const url = API + '/api/intruders' + (showDismissed ? '?include_dismissed=1' : '');
+  fetch(url).then(r=>r.json()).then(list => {
+    const grid = document.getElementById('intruderGrid');
+    if (!list.length) {
+      grid.innerHTML = '<div class="persons-empty"><strong>No intruders recorded</strong>When the system sees someone it does not recognise, they will appear here.</div>';
+      return;
+    }
+    grid.innerHTML = list.map(intr => {
+      const when = formatRelativeTime(intr.detected_at);
+      const dismissedLabel = intr.dismissed
+        ? '<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.65);color:var(--text-2);padding:2px 7px;border-radius:4px;font-size:9px;letter-spacing:0.5px;font-family:JetBrains Mono,monospace">DISMISSED</div>'
+        : '';
+      return `
+        <div class="person-card" style="border-color:${intr.dismissed ? 'var(--border)' : 'rgba(255,59,96,0.35)'}">
+          ${dismissedLabel}
+          <img class="person-photo" src="${intr.photo_url}?t=${Date.now()}"
+               onerror="this.outerHTML='<div class=&quot;person-photo-placeholder&quot; style=&quot;color:#f87171&quot;>?</div>'">
+          <div class="person-body">
+            <div class="person-name" style="color:${intr.dismissed ? 'var(--text-2)' : '#ff6b85'}">Unknown</div>
+            <div style="font-size:10px;color:var(--text-2);font-family:JetBrains Mono,monospace;margin-bottom:8px">
+              ${escapeHtml(intr.camera_name)} • ${when}
+            </div>
+            <div class="person-actions" style="flex-wrap:wrap;gap:6px">
+              <button class="btn btn-sm btn-primary" style="font-size:10px;padding:5px 10px" onclick="promptRegisterIntruder(${intr.intruder_id})">Register</button>
+              ${intr.dismissed
+                ? `<button class="person-delete" onclick="deleteIntruder(${intr.intruder_id})">Delete</button>`
+                : `<button class="person-delete" onclick="dismissIntruder(${intr.intruder_id})">Dismiss</button>`
+              }
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  });
+}
+
+function dismissIntruder(id) {
+  fetch(API + '/api/intruders/' + id + '/dismiss', {method: 'POST'}).then(() => loadIntruders());
+}
+function deleteIntruder(id) {
+  if (!confirm('Permanently delete this intruder record?')) return;
+  fetch(API + '/api/intruders/' + id, {method: 'DELETE'}).then(() => loadIntruders());
+}
+
+function promptRegisterIntruder(id) {
+  const name = prompt('Name for this person:');
+  if (!name || !name.trim()) return;
+  const categoryInput = prompt('Category? Type: child, adult, or elderly', 'adult');
+  const category = (categoryInput || 'adult').trim().toLowerCase();
+  const validCat = ['child','adult','elderly'].includes(category) ? category : 'adult';
+
+  fetch(API + '/api/intruders/' + id + '/register', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name: name.trim(), category: validCat}),
+  }).then(r => r.json().then(b => ({ok: r.ok, body: b})))
+    .then(({ok, body}) => {
+      if (!ok || body.error) return alert(body.error || 'Registration failed');
+      loadPersons(); loadIntruders();
+      showToast(`${body.name} moved to registered persons`);
+    });
+}
+
+function formatRelativeTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts.replace(' ', 'T') + 'Z');
+  const secs = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (secs < 60)    return secs + 's ago';
+  if (secs < 3600)  return Math.floor(secs / 60) + 'm ago';
+  if (secs < 86400) return Math.floor(secs / 3600) + 'h ago';
+  return Math.floor(secs / 86400) + 'd ago';
+}
+
+function showToast(msg) {
+  let el = document.getElementById('hs-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'hs-toast';
+    el.style.cssText = 'position:fixed;bottom:22px;right:22px;background:#0e1628;border:1px solid rgba(13,217,138,0.4);color:#0dd98a;padding:12px 18px;border-radius:8px;font-size:12px;font-family:Inter,sans-serif;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,0.4);opacity:0;transform:translateY(10px);transition:opacity 0.2s,transform 0.2s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(10px)'; }, 3000);
+}
+
+function updateSlider(el, valId) {
+  const min = parseFloat(el.min) || 0, max = parseFloat(el.max) || 100;
+  const pct = ((parseFloat(el.value) - min) / (max - min)) * 100;
+  el.style.setProperty('--p', pct + '%');
+  const v = document.getElementById(valId);
+  if (v) v.textContent = el.value;
+}
+
+function populateModelSelects(currentPose, currentFire) {
+  fetch(API+'/api/models').then(r=>r.json()).then(m=>{
+    const poseSel = document.getElementById('setModel');
+    const fireSel = document.getElementById('setFireModel');
+    if (poseSel) {
+      const opts = (m.pose||[]).map(x=>`<option value="${x.value}">${x.label}</option>`).join('');
+      poseSel.innerHTML = opts || '<option value="">No .pt files found in Fall_Detection/weights/</option>';
+      if (currentPose) [...poseSel.options].forEach(o=>o.selected=o.value===currentPose);
+    }
+    if (fireSel) {
+      const opts = (m.fire||[]).map(x=>`<option value="${x.value}">${x.label}</option>`).join('');
+      fireSel.innerHTML = opts || '<option value="">No .pt files found in Fire_Detection/</option>';
+      if (currentFire) [...fireSel.options].forEach(o=>o.selected=o.value===currentFire);
+    }
+  });
+}
+
+let __settingsDirty = false;
+let __settingsSnapshot = {};
+
+function showSubject(name, btn) {
+  document.querySelectorAll('.set-pane').forEach(p => p.classList.remove('active'));
+  const pane = document.getElementById('pane-' + name);
+  if (pane) pane.classList.add('active');
+  document.querySelectorAll('.set-nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function setDirty(yes) {
+  __settingsDirty = !!yes;
+  const bar = document.getElementById('saveBar');
+  if (bar) bar.classList.toggle('dirty', __settingsDirty);
+}
+
+function attachDirtyListeners() {
+  const root = document.getElementById('page-settings');
+  if (!root || root.dataset.dirtyBound === '1') return;
+  root.querySelectorAll('input,select,textarea').forEach(el => {
+    // Skip the "add camera" inputs and zone-related inputs (their actions don't go through /api/settings)
+    if (el.id && (el.id.startsWith('newCam') || el.id.startsWith('qc'))) return;
+    el.addEventListener('input', () => setDirty(true));
+    el.addEventListener('change', () => setDirty(true));
+  });
+  root.dataset.dirtyBound = '1';
+}
+
+function gatherSettings() {
+  const data = {};
+  const tH = document.getElementById('setThreshold');
+  if (tH) data.fall_threshold = parseInt(tH.value) / 100;
+  const inA = document.getElementById('setInactivity');
+  if (inA) data.inactivity_seconds = parseInt(inA.value) || 300;
+  const cool = document.getElementById('setCooldown');
+  if (cool) data.alert_cooldown = parseInt(cool.value) || 60;
+  const ph = document.getElementById('setPhones');
+  if (ph) data.alert_phones = ph.value;
+
+  const md = document.getElementById('setModel');
+  if (md && md.value) data.yolo_model = md.value;
+  const yc = document.getElementById('setYoloConf');
+  if (yc) data.yolo_confidence = parseInt(yc.value) / 100;
+  const isz = document.getElementById('setImgsz');
+  if (isz) data.yolo_imgsz = parseInt(isz.value) || 640;
+  const fps = document.getElementById('setFps');
+  if (fps) data.process_fps = parseInt(fps.value) || 0;
+  const fp16 = document.querySelector('input[name=fp16]:checked');
+  if (fp16) data.use_fp16 = fp16.value === 'true';
+
+  const fireEn = document.querySelector('input[name=fireEnabled]:checked');
+  if (fireEn) data.fire_enabled = fireEn.value === 'true';
+  const fm = document.getElementById('setFireModel');
+  if (fm && fm.value) data.fire_model = fm.value;
+  const fc = document.getElementById('setFireConf');
+  if (fc) data.fire_confidence = parseInt(fc.value) / 100;
+  const fcl = document.getElementById('setFireClasses');
+  if (fcl) data.fire_classes = fcl.value || 'fire,smoke';
+  const fco = document.getElementById('setFireCooldown');
+  if (fco) data.fire_cooldown = parseInt(fco.value) || 5;
+
+  const faceEn = document.querySelector('input[name=faceEnabled]:checked');
+  if (faceEn) data.face_enabled = faceEn.value === 'true';
+  const fmt = document.getElementById('setFaceMatch');
+  if (fmt) data.face_match_threshold = parseInt(fmt.value) / 100;
+  const fevn = document.getElementById('setFaceEveryN');
+  if (fevn) data.face_every_n = parseInt(fevn.value) || 5;
+  const ic = document.getElementById('setIntruderCooldown');
+  if (ic) data.intruder_cooldown = parseInt(ic.value) || 30;
+  return data;
+}
+
+// Only model SWAPS need a hard restart. Everything else (image size, FPS,
+// thresholds, fire_enabled, face_enabled) is hot-applied by the backend via
+// manager.reload_settings() -> models.ensure_loaded().
+function _restartHeavyKeys() {
+  return ['yolo_model', 'fire_model'];
+}
+
+function saveAllSettings() {
+  const data = gatherSettings();
+  // Compare against the freshest server-side state, not just the local snapshot,
+  // so reverting a value to its server value never triggers a restart.
+  fetch(API + '/api/settings').then(r => r.json()).then(serverNow => {
+    const heavy = _restartHeavyKeys().some(k =>
+      JSON.stringify(serverNow[k]) !== JSON.stringify(data[k])
+    );
+    return fetch(API + '/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    }).then(r => r.json()).then(() => {
+      __settingsSnapshot = {...data};
+      setDirty(false);
+      if (heavy) {
+        showToast('Saved - reloading model');
+        fetch(API + '/api/system/stop', {method: 'POST'})
+          .then(() => setTimeout(() => fetch(API + '/api/system/start', {method: 'POST'}), 1500));
+      } else {
+        showToast('Settings saved');
+      }
+    });
+  }).catch(err => {
+    showToast('Save failed: ' + err);
+  });
+}
+
+function discardChanges() {
+  loadSettings();
+  setDirty(false);
+}
+
+function loadSettings() {
+  fetch(API+'/api/settings').then(r=>r.json()).then(s=>{
+    const thr = document.getElementById('setThreshold');
+    if (thr) { thr.value = Math.round(s.fall_threshold*100); updateSlider(thr,'setThresholdVal'); }
+    const inA = document.getElementById('setInactivity');
+    if (inA) inA.value = s.inactivity_seconds;
+    const cool = document.getElementById('setCooldown');
+    if (cool) cool.value = s.alert_cooldown;
+    const ph = document.getElementById('setPhones');
+    if (ph) ph.value = s.alert_phones || '';
+    const conf = document.getElementById('setYoloConf');
+    if(conf){ conf.value = Math.round((s.yolo_confidence||0.5)*100); updateSlider(conf,'setYoloConfVal'); }
+    const imgszSel=document.getElementById('setImgsz');
+    if(imgszSel)[...imgszSel.options].forEach(o=>o.selected=parseInt(o.value)===parseInt(s.yolo_imgsz||640));
+    const fpsEl = document.getElementById('setFps');
+    if(fpsEl) fpsEl.value = s.process_fps != null ? s.process_fps : 0;
+    const fp16Val = String(s.use_fp16 !== false);
+    document.querySelectorAll('input[name=fp16]').forEach(r => r.checked = (r.value === fp16Val));
+
+    // Fire
+    const fireEnabledVal = String(s.fire_enabled !== false);
+    document.querySelectorAll('input[name=fireEnabled]').forEach(r => r.checked = (r.value === fireEnabledVal));
+    const fconf = document.getElementById('setFireConf');
+    if(fconf){ fconf.value = Math.round((s.fire_confidence||0.35)*100); updateSlider(fconf,'setFireConfVal'); }
+    const fcls = document.getElementById('setFireClasses');
+    if(fcls) fcls.value = s.fire_classes || 'fire,smoke';
+    const fcool = document.getElementById('setFireCooldown');
+    if(fcool) fcool.value = s.fire_cooldown || 5;
+
+    // Face
+    const faceEnabledVal = String(s.face_enabled !== false);
+    document.querySelectorAll('input[name=faceEnabled]').forEach(r => r.checked = (r.value === faceEnabledVal));
+    const fmatch = document.getElementById('setFaceMatch');
+    if(fmatch){ fmatch.value = Math.round((s.face_match_threshold||0.42)*100); updateSlider(fmatch,'setFaceMatchVal'); }
+    const fevn = document.getElementById('setFaceEveryN');
+    if(fevn) fevn.value = s.face_every_n || 5;
+    const ic = document.getElementById('setIntruderCooldown');
+    if(ic) ic.value = s.intruder_cooldown || 30;
+
+    fetch(API+'/api/persons').then(r=>r.json()).then(d=>{
+      const hint = document.getElementById('faceStatusHint');
+      if (!hint) return;
+      hint.textContent = d.face_rec_enabled
+        ? '✓ Face recognition is active (InsightFace ArcFace).'
+        : '⚠ Face recognition is currently disabled or failed to load. Check the server log for [face] lines.';
+      hint.style.color = d.face_rec_enabled ? 'var(--success)' : 'var(--warning)';
+    });
+
+    populateModelSelects(s.yolo_model, s.fire_model);
+
+    // Snapshot for dirty tracking + discard support
+    __settingsSnapshot = gatherSettings();
+    setDirty(false);
+    attachDirtyListeners();
+  });
+}
+
+function loadCameraList() {
+  fetch(API+'/api/cameras').then(r=>r.json()).then(cams=>{
+    document.getElementById('camList').innerHTML=cams.map(c=>`<div class="cam-item"><div class="cam-info"><strong>${c.name}</strong><small>${c.url} - ${c.location}</small></div><button class="btn btn-danger btn-sm" onclick="deleteCamera(${c.camera_id})">Remove</button></div>`).join('')||'<p style="color:var(--text-2);font-size:12px">No cameras configured.</p>';
+  });
+}
+
+function addCamera() {
+  const data={name:document.getElementById('newCamName').value||'Camera',url:document.getElementById('newCamUrl').value||'0',location:document.getElementById('newCamLoc').value||''};
+  fetch(API+'/api/cameras',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(r=>r.json()).then(()=>{
+    loadCameraList();
+    ['newCamName','newCamUrl','newCamLoc'].forEach(id=>document.getElementById(id).value='');
+  });
+}
+
+function quickAddCamera() {
+  const name = document.getElementById('qcName').value.trim() || 'Camera';
+  const url  = document.getElementById('qcUrl').value.trim() || '0';
+  const loc  = document.getElementById('qcLoc').value.trim() || '';
+  fetch(API+'/api/cameras',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,url,location:loc})
+  }).then(r=>r.json()).then(()=>{
+    ['qcName','qcUrl','qcLoc'].forEach(id=>document.getElementById(id).value='');
+    if(document.getElementById('page-settings').style.display!=='none') loadCameraList();
+  }).catch(()=>alert('Failed to add camera'));
+}
+
+function deleteCamera(id) {
+  if(!confirm('Remove this camera?'))return;
+  fetch(API+'/api/cameras/'+id,{method:'DELETE'}).then(()=>loadCameraList());
+}
+
+function clearEvents() {
+  if (!confirm('Clear all events from the log? This cannot be undone.')) return;
+  fetch(API + '/api/events/clear', {method:'POST'}).then(r => r.json()).then(d => {
+    if (d.error) { alert('Not authorised - please log in first'); return; }
+    document.getElementById('logRows').innerHTML = '<p style="color:var(--text-2);font-size:12px;padding:16px 20px">No events yet.</p>';
+    document.getElementById('m-alerts').textContent = '0';
+    document.getElementById('tb-alerts').textContent = '0';
+  });
+}
+
+pollStatus();
+loadRecentEvents();
+statusInterval = setInterval(pollStatus, 3000);
+eventInterval = setInterval(loadRecentEvents, 10000);
+
+(function() {
+  const STORAGE_KEY = 'hs_thumb_width';
+  const MIN_THUMB = 160, MAX_THUMB = 600, DEFAULT_THUMB = 290;
+  function initResizer() {
+    const divider  = document.getElementById('liveDivider');
+    const thumbCol = document.getElementById('thumbCol');
+    if (!divider || !thumbCol) return;
+    const saved = parseInt(localStorage.getItem(STORAGE_KEY));
+    if (saved >= MIN_THUMB && saved <= MAX_THUMB) thumbCol.style.width = saved + 'px';
+    let dragging = false, startX = 0, startW = 0;
+    divider.addEventListener('mousedown', e => {
+      dragging = true; startX = e.clientX; startW = thumbCol.offsetWidth;
+      divider.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const newW = Math.min(MAX_THUMB, Math.max(MIN_THUMB, startW + (startX - e.clientX)));
+      thumbCol.style.width = newW + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      divider.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      localStorage.setItem(STORAGE_KEY, thumbCol.offsetWidth);
+    });
+    divider.addEventListener('dblclick', () => {
+      thumbCol.style.width = DEFAULT_THUMB + 'px';
+      localStorage.setItem(STORAGE_KEY, DEFAULT_THUMB);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initResizer);
+  else initResizer();
+})();
+</script>
+
+</body>
+</html>
