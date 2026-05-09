@@ -100,6 +100,9 @@ def _draw_fires(frame, fires):
                fg=COLOR_TEXT_LIGHT, bg=color, size=0.5, thick=1)
 
 
+COLOR_GLOBAL_ID = (230, 170, 60)  # amber, matches the handoff event colour
+
+
 def _draw_persons(frame, persons, kp_conf_min):
     for p in persons:
         bb = _bbox4(p["bbox"])
@@ -120,6 +123,20 @@ def _draw_persons(frame, persons, kp_conf_min):
                 else f"#{pid} {state_label}")
         _label(frame, text, x1, max(y1 - 2, 14),
                fg=COLOR_TEXT_DARK, bg=color, size=0.5, thick=1)
+
+        # Cross-camera global identity badge (drawn underneath the box).
+        gid = p.get("global_id")
+        if gid is not None:
+            gname = p.get("global_name")
+            score = p.get("reid_score")
+            badge = f"G{gid}"
+            if gname:
+                badge += f" ({gname})"
+            if score is not None and score > 0:
+                badge += f"  {score:.2f}"
+            _label(frame, badge, x1, min(y2 + 18, frame.shape[0] - 2),
+                   fg=COLOR_TEXT_DARK, bg=COLOR_GLOBAL_ID,
+                   size=0.45, thick=1)
 
 
 def _draw_faces(frame, faces):

@@ -16,6 +16,7 @@ from .db import init_db, write_conn
 from .events import Event, EventBus
 from .persons import IntruderStore, PersonStore
 from .pipeline import Models, list_fire_models, list_pose_models
+from .reid import ReIDStore
 from .settings import SettingsStore
 from .zones import ZoneStore
 
@@ -24,10 +25,13 @@ from .zones import ZoneStore
 
 _INT_KEYS = ("inactivity_seconds", "alert_cooldown", "yolo_imgsz",
              "process_fps", "fire_cooldown", "intruder_cooldown",
-             "fire_every_n", "face_every_n")
+             "fire_every_n", "face_every_n", "reid_every_n")
 _FLOAT_KEYS = ("fall_threshold", "yolo_confidence", "fire_confidence",
-               "face_match_threshold")
-_BOOL_KEYS = ("use_fp16", "fire_enabled", "face_enabled")
+               "face_match_threshold", "reid_match_threshold",
+               "reid_ttl_seconds", "reid_handoff_cooldown",
+               "reid_reembed_interval")
+_BOOL_KEYS = ("use_fp16", "fall_enabled", "fire_enabled", "face_enabled",
+              "reid_enabled")
 
 
 def _coerce_settings(data: dict[str, Any]) -> dict[str, Any]:
@@ -78,10 +82,14 @@ def create_app(*, db_path: str = "homeshield.db",
     intruder_store = IntruderStore(db_path=db_path, photos_dir=intruder_dir)
     zone_store = ZoneStore(db_path=db_path)
     models = Models(settings=settings)
+    reid_store = ReIDStore(
+        match_threshold=float(settings.get("reid_match_threshold", 0.65)),
+        ttl_seconds=float(settings.get("reid_ttl_seconds", 120.0)),
+    )
     manager = CameraManager(
         db_path=db_path, models=models, settings=settings, bus=bus,
         person_store=person_store, intruder_store=intruder_store,
-        zone_store=zone_store,
+        zone_store=zone_store, reid_store=reid_store,
     )
 
     if auto_start:
@@ -122,9 +130,29 @@ def create_app(*, db_path: str = "homeshield.db",
                 "fire_loaded": models.fire_model is not None,
                 "face_available": bool(models.face_engine
                                        and models.face_engine.available),
+                "reid_available": bool(models.reid_engine
+                                       and models.reid_engine.available),
                 "device": models.device,
             },
         })
+
+    # ===== ReID =========================================================
+
+    @app.route("/api/reid/identities")
+    def api_reid_identities():
+        """Live cross-camera identities (in-memory; expires after ttl)."""
+        return jsonify({
+            "available": bool(models.reid_engine
+                              and models.reid_engine.available),
+            "match_threshold": reid_store.match_threshold,
+            "ttl_seconds": reid_store.ttl_seconds,
+            "identities": reid_store.list_identities(),
+        })
+
+    @app.route("/api/reid/reset", methods=["POST"])
+    def api_reid_reset():
+        reid_store.reset()
+        return jsonify({"ok": True})
 
     # ===== Cameras ======================================================
 

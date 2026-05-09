@@ -27,6 +27,7 @@ from .db import read_conn, write_conn
 EVENT_TYPES = {
     "fall_detected", "lying_motionless", "inactivity",
     "zone_entry", "intruder_detected", "fire_detected",
+    "cross_camera_handoff",
     "normal", "system",
 }
 
@@ -70,14 +71,15 @@ def _fmt_ts(ts: float) -> str:
 
 # BGR colour + label per event type.
 _EV_VISUAL = {
-    "fire_detected":     ((40, 60, 230),   "FIRE"),
-    "fall_detected":     ((30, 210, 240),  "FALL"),
-    "lying_motionless":  ((40, 60, 230),   "LYING"),
-    "inactivity":        ((30, 210, 240),  "INACTIVITY"),
-    "intruder_detected": ((50, 140, 245),  "INTRUDER"),
-    "zone_entry":        ((50, 140, 245),  "ZONE ENTRY"),
-    "system":            ((220, 160, 80),  "SYSTEM"),
-    "normal":            ((100, 220, 130), "OK"),
+    "fire_detected":        ((40, 60, 230),   "FIRE"),
+    "fall_detected":        ((30, 210, 240),  "FALL"),
+    "lying_motionless":     ((40, 60, 230),   "LYING"),
+    "inactivity":           ((30, 210, 240),  "INACTIVITY"),
+    "intruder_detected":    ((50, 140, 245),  "INTRUDER"),
+    "zone_entry":           ((50, 140, 245),  "ZONE ENTRY"),
+    "cross_camera_handoff": ((230, 170, 60),  "HANDOFF"),
+    "system":               ((220, 160, 80),  "SYSTEM"),
+    "normal":               ((100, 220, 130), "OK"),
 }
 
 

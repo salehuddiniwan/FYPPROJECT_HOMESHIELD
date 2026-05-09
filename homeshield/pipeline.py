@@ -5,11 +5,12 @@ Stages per frame:
   1. Pose      (YOLO pose + research-tuned FSM, every frame)
   2. Fire      (YOLO detect, every fire_every_n frames)
   3. Face      (InsightFace, every face_every_n frames)
-  4. Zone      (point-in-polygon vs configured zones)
+  4. ReID      (OSNet body embedding -> global identity, every reid_every_n)
+  5. Zone      (point-in-polygon vs configured zones)
 
 Edge-triggered events with cooldowns:
   fall_detected, lying_motionless, inactivity, zone_entry,
-  intruder_detected, fire_detected.
+  intruder_detected, fire_detected, cross_camera_handoff.
 """
 
 from __future__ import annotations
@@ -71,7 +72,7 @@ def list_fire_models() -> list[dict[str, str]]:
 # ---- Shared models --------------------------------------------------------
 
 class Models:
-    """Lazy-loaded container for pose / fire YOLO + face engine."""
+    """Lazy-loaded container for pose / fire YOLO + face engine + ReID engine."""
 
     def __init__(self, settings):
         self.settings = settings
@@ -79,6 +80,7 @@ class Models:
         self.pose_model = None
         self.fire_model = None
         self.face_engine = None
+        self.reid_engine = None
         self.device = "cpu"
         self.pose_weights_path: str = ""
         self.fire_weights_path: str = ""
@@ -91,12 +93,15 @@ class Models:
                                 "fire detection")
             self._sync_optional("face_enabled", "face_engine", self._load_face,
                                 "face recognition")
+            self._sync_optional("reid_enabled", "reid_engine", self._load_reid,
+                                "person re-identification")
 
     def reload(self) -> None:
         with self._lock:
             self.pose_model = None
             self.fire_model = None
             self.face_engine = None
+            self.reid_engine = None
         self.ensure_loaded()
 
     # ---- internals ------------------------------------------------------
@@ -175,6 +180,19 @@ class Models:
         except Exception as e:
             print(f"[models] face engine init failed: {e}")
             self.face_engine = None
+
+    def _load_reid(self) -> None:
+        """Optional cross-camera ReID (OSNet via torchreid)."""
+        from .reid import ReIDEngine
+        try:
+            model_name = str(self.settings.get("reid_model", "osnet_x1_0"))
+            self.reid_engine = ReIDEngine(model_name=model_name,
+                                          prefer_gpu=True)
+            if not self.reid_engine.available:
+                print(f"[models] reid disabled: {self.reid_engine.last_error}")
+        except Exception as e:
+            print(f"[models] reid engine init failed: {e}")
+            self.reid_engine = None
 
 
 # ---- Per-camera state -----------------------------------------------------
@@ -327,12 +345,185 @@ class FaceWorker(threading.Thread):
                 self._latest_faces = faces
 
 
+# ---- ReIDWorker -----------------------------------------------------------
+
+class ReIDWorker(threading.Thread):
+    """Per-camera daemon that runs OSNet body embedding + global-id assignment
+    OFF the main capture loop.
+
+    The pipeline submits ``(frame, ts, persons)`` tuples; the worker computes
+    body embeddings for the persons it hasn't seen recently and writes the
+    resulting ``{local_track_id -> global_id}`` mapping to a small in-memory
+    cache that the pipeline reads on every frame (so even on frames we
+    *skip* the ReID compute, the overlay still labels the same global id).
+    """
+
+    # Re-embed a track at most this often (seconds) once it has a global id.
+    REEMBED_INTERVAL_S = 3.0
+
+    def __init__(self, *, camera_id, camera_name, models, settings,
+                 reid_store, bus):
+        super().__init__(daemon=True, name=f"hs-reid-{camera_id}")
+        self.camera_id = int(camera_id)
+        self.camera_name = camera_name
+        self.models = models
+        self.settings = settings
+        self.reid_store = reid_store
+        self.bus = bus
+        self._inbox: queue.Queue = queue.Queue(maxsize=1)
+        self._lock = threading.Lock()
+        # local_track_id -> (global_id, score, last_embedded_ts)
+        self._track_cache: dict[int, tuple[int, float, float]] = {}
+        # Cooldown for cross_camera_handoff per global_id (so a flicker
+        # between two cams doesn't spam the event log).
+        self._handoff_emitted: dict[int, float] = {}
+        self._stop_flag = threading.Event()
+
+    def submit(self, frame_bgr: np.ndarray, ts: float,
+               persons_snapshot: list[dict[str, Any]]) -> None:
+        """Non-blocking; drops the queued payload if one is still pending."""
+        if not persons_snapshot:
+            return
+        payload = (frame_bgr, ts, persons_snapshot)
+        try:
+            self._inbox.put_nowait(payload)
+        except queue.Full:
+            try:
+                self._inbox.get_nowait()
+                self._inbox.put_nowait(payload)
+            except Exception:
+                pass
+
+    def lookup(self, local_track_id: int) -> Optional[tuple[int, float]]:
+        """Return cached (global_id, score) for a local track, or None."""
+        with self._lock:
+            entry = self._track_cache.get(int(local_track_id))
+        return (entry[0], entry[1]) if entry else None
+
+    def request_stop(self) -> None:
+        self._stop_flag.set()
+
+    def _gc_cache(self, persons_snapshot: list[dict[str, Any]]) -> None:
+        """Drop cache rows for tracks that no longer exist on this camera."""
+        live = {int(p["id"]) for p in persons_snapshot if "id" in p}
+        with self._lock:
+            for k in list(self._track_cache):
+                if k not in live:
+                    self._track_cache.pop(k, None)
+
+    def run(self) -> None:
+        from .events import Event
+        from .reid import crop_body
+
+        while not self._stop_flag.is_set():
+            try:
+                frame, ts, persons = self._inbox.get(timeout=0.5)
+            except queue.Empty:
+                continue
+
+            if not self.settings.get("reid_enabled", True):
+                with self._lock:
+                    self._track_cache.clear()
+                continue
+
+            engine = self.models.reid_engine
+            if engine is None or not engine.available or self.reid_store is None:
+                continue
+
+            self._gc_cache(persons)
+
+            # Decide which tracks need embedding this cycle.
+            interval = float(self.settings.get(
+                "reid_reembed_interval", self.REEMBED_INTERVAL_S))
+            crops: list[np.ndarray] = []
+            owners: list[int] = []
+            for p in persons:
+                pid = int(p.get("id", -1))
+                if pid < 0:
+                    continue
+                bb = _bbox4(p.get("bbox"))
+                if bb is None:
+                    continue
+                with self._lock:
+                    cached = self._track_cache.get(pid)
+                if cached is not None and (ts - cached[2]) < interval:
+                    continue  # still fresh
+                crop = crop_body(frame, bb)
+                if crop is None:
+                    continue
+                crops.append(crop)
+                owners.append(pid)
+
+            if not crops:
+                continue
+
+            embs = engine.embed(crops)
+            if embs is None or embs.shape[0] != len(owners):
+                continue
+
+            # Pull config snapshot once per cycle.
+            self.reid_store.update_config(
+                match_threshold=float(self.settings.get(
+                    "reid_match_threshold", self.reid_store.match_threshold)),
+                ttl_seconds=float(self.settings.get(
+                    "reid_ttl_seconds", self.reid_store.ttl_seconds)),
+            )
+            handoff_cooldown = float(self.settings.get(
+                "reid_handoff_cooldown", 5.0))
+
+            for pid, emb in zip(owners, embs):
+                outcome = self.reid_store.assign(
+                    camera_id=self.camera_id,
+                    local_track_id=pid,
+                    embedding=emb,
+                    ts=ts,
+                    camera_name=self.camera_name,
+                )
+                gid = outcome["global_id"]
+                with self._lock:
+                    self._track_cache[pid] = (gid, outcome["score"], ts)
+
+                if outcome["is_handoff"]:
+                    last = self._handoff_emitted.get(gid, 0.0)
+                    if (ts - last) >= handoff_cooldown:
+                        self._handoff_emitted[gid] = ts
+                        info = self.reid_store.identity_info(gid) or {}
+                        prev_name = (outcome["previous_camera_name"]
+                                     or f"cam{outcome['previous_camera_id']}")
+                        details = (
+                            f"Person G{gid}"
+                            + (f" ({info.get('name')})" if info.get("name") else "")
+                            + f" moved from {prev_name} -> {self.camera_name}"
+                        )
+                        bb = _bbox4(next(
+                            (p["bbox"] for p in persons
+                             if int(p.get("id", -1)) == pid), None))
+                        self.bus.publish(Event(
+                            event_type="cross_camera_handoff", ts=ts,
+                            camera_id=self.camera_id,
+                            camera_name=self.camera_name,
+                            person_category="known" if info.get("name") else "unknown",
+                            confidence=float(outcome["score"]),
+                            details=details,
+                            bbox=bb,
+                            meta={
+                                "global_id": gid,
+                                "person_id": info.get("person_id"),
+                                "name": info.get("name"),
+                                "previous_camera_id": outcome["previous_camera_id"],
+                                "previous_camera_name": outcome["previous_camera_name"],
+                                "local_track_id": pid,
+                            },
+                        ), frame=frame)
+
+
 class CameraPipeline:
     """Per-camera mutable state. Models are external (shared)."""
 
     def __init__(self, *, camera_id: int, camera_name: str,
                  models: Models, settings, person_store=None,
-                 zone_store=None, intruder_store=None, bus=None):
+                 zone_store=None, intruder_store=None, bus=None,
+                 reid_store=None):
         self.camera_id = int(camera_id)
         self.camera_name = camera_name
         self.models = models
@@ -340,6 +531,7 @@ class CameraPipeline:
         self.person_store = person_store
         self.zone_store = zone_store
         self.intruder_store = intruder_store
+        self.reid_store = reid_store
 
         from fall_detection import Config, MultiPersonState, State
         self.cfg = Config(
@@ -390,9 +582,25 @@ class CameraPipeline:
                 print(f"[pipeline cam={self.camera_id}] face-worker start failed: {e}")
                 self.face_worker = None
 
+        # Async ReID worker (one per camera). Polls reid_enabled itself.
+        self.reid_worker: Optional[ReIDWorker] = None
+        if bus is not None and self.reid_store is not None:
+            try:
+                self.reid_worker = ReIDWorker(
+                    camera_id=self.camera_id, camera_name=self.camera_name,
+                    models=self.models, settings=self.settings,
+                    reid_store=self.reid_store, bus=bus,
+                )
+                self.reid_worker.start()
+            except Exception as e:
+                print(f"[pipeline cam={self.camera_id}] reid-worker start failed: {e}")
+                self.reid_worker = None
+
     def shutdown(self) -> None:
         if self.face_worker is not None:
             self.face_worker.request_stop()
+        if self.reid_worker is not None:
+            self.reid_worker.request_stop()
 
     def reload_settings(self) -> None:
         self.cfg.imgsz = int(self.settings.get("yolo_imgsz", 640))
@@ -411,11 +619,18 @@ class CameraPipeline:
         self._run_pose(frame_bgr, ts, H, W, device, res)
         self._collect_zones(W, H, res)
         self._emit_person_events(ts, W, H, res)
-        res.fall_alert_ids = [
-            pid for pid, det in self.fall_state.detectors.items() if det.fall_alert
-        ]
+        # Suppress the red ALERT-FALL banner when fall detection is disabled,
+        # even if the underlying FSM state still says FALL_DETECTED.
+        if self.settings.get("fall_enabled", True):
+            res.fall_alert_ids = [
+                pid for pid, det in self.fall_state.detectors.items()
+                if det.fall_alert
+            ]
+        else:
+            res.fall_alert_ids = []
         self._run_fire(frame_bgr, ts, device, res)
         self._run_face(frame_bgr, ts, res)
+        self._run_reid(frame_bgr, ts, res)
 
         # FPS smoothing (EMA, alpha=0.1)
         if self._last_t is not None:
@@ -463,6 +678,7 @@ class CameraPipeline:
         cooldown = float(self.settings.get("alert_cooldown", 60))
         State = self.State
         fall_thresh = float(self.settings.get("fall_threshold", 0.8))
+        fall_enabled = bool(self.settings.get("fall_enabled", True))
 
         for p in res.persons:
             pid = int(p["id"])
@@ -497,16 +713,18 @@ class CameraPipeline:
                     bbox=bb, meta=meta,
                 ))
 
-            # rising-edge events; suppressed inside safe zones
-            if not in_safe and cur == State.FALL_DETECTED and prev != State.FALL_DETECTED:
-                _emit(self._fall_emitted, "fall_detected",
-                      fall_thresh, f"Person #{pid}")
-            if not in_safe and cur == State.LYING_MOTIONLESS and prev != State.LYING_MOTIONLESS:
-                _emit(self._motionless_emitted, "lying_motionless",
-                      0.95, f"Person #{pid} unresponsive")
-            if not in_safe and cur == State.INACTIVITY and prev != State.INACTIVITY:
-                _emit(self._inactivity_emitted, "inactivity",
-                      0.7, f"Person #{pid} idle")
+            # rising-edge events; suppressed inside safe zones AND when
+            # fall detection has been disabled in the dashboard.
+            if fall_enabled:
+                if not in_safe and cur == State.FALL_DETECTED and prev != State.FALL_DETECTED:
+                    _emit(self._fall_emitted, "fall_detected",
+                          fall_thresh, f"Person #{pid}")
+                if not in_safe and cur == State.LYING_MOTIONLESS and prev != State.LYING_MOTIONLESS:
+                    _emit(self._motionless_emitted, "lying_motionless",
+                          0.95, f"Person #{pid} unresponsive")
+                if not in_safe and cur == State.INACTIVITY and prev != State.INACTIVITY:
+                    _emit(self._inactivity_emitted, "inactivity",
+                          0.7, f"Person #{pid} idle")
 
             # Child-in-danger-zone (uses a separate cooldown dict keyed by pid+zone)
             if cat == "child":
@@ -618,3 +836,60 @@ class CameraPipeline:
         if any(f.get("match_id") is None and f.get("embedding") is not None
                for f in res.faces):
             res.intruder_alert = True
+
+    def _run_reid(self, frame, ts, res: FrameResult) -> None:
+        """Run cross-camera ReID via the async worker and tag each tracked
+        person with a ``global_id``. The actual embedding compute is async,
+        so on frames where the worker hasn't refreshed yet we just read
+        whatever the cache holds (sticky labels)."""
+        if self.reid_worker is None or self.reid_store is None:
+            return
+        if not self.settings.get("reid_enabled", True):
+            return
+        every = max(1, int(self.settings.get("reid_every_n", 6) or 1))
+        if self._frame_idx % every == 0 and res.persons:
+            # Build a lightweight snapshot of (id, bbox) so the worker can
+            # crop independently of any later mutation of res.persons.
+            snap = [{"id": int(p["id"]), "bbox": p["bbox"]}
+                    for p in res.persons if "id" in p and "bbox" in p]
+            if snap:
+                self.reid_worker.submit(frame, ts, snap)
+
+        # Annotate every person with whatever the cache currently knows.
+        for p in res.persons:
+            pid = p.get("id")
+            if pid is None:
+                continue
+            cached = self.reid_worker.lookup(int(pid))
+            if cached is not None:
+                gid, score = cached
+                p["global_id"] = gid
+                p["reid_score"] = float(score)
+                info = self.reid_store.identity_info(gid)
+                if info and info.get("name"):
+                    p["global_name"] = info["name"]
+
+        # Hook: if the face stage matched a known person and the same local
+        # track has a global_id, push the name back into the global identity
+        # so future handoffs can refer to the person by name.
+        for f in res.faces:
+            name = f.get("match_name")
+            person_id = f.get("match_id")
+            if not name:
+                continue
+            # Naive face<->person association: pick the closest person bbox
+            # whose box contains the face center.
+            fx = f["x"] + f["w"] * 0.5
+            fy = f["y"] + f["h"] * 0.5
+            for p in res.persons:
+                bb = _bbox4(p.get("bbox"))
+                if bb is None:
+                    continue
+                x1, y1, x2, y2 = bb
+                if x1 <= fx <= x2 and y1 <= fy <= y2:
+                    gid = p.get("global_id")
+                    if gid is not None:
+                        self.reid_store.annotate_name(
+                            int(gid), name=name, person_id=person_id)
+                        p["global_name"] = name
+                    break

@@ -1027,6 +1027,21 @@ select{
             <p>Fall confidence threshold, inactivity timeout, and alert cooldown.</p>
           </div>
         </div>
+        <div class="form-group">
+          <label>Enable fall detection</label>
+          <div class="radio-group">
+            <label class="radio-opt">
+              <input type="radio" name="fallEnabled" value="true" checked>
+              <span class="radio-mark"></span>
+              <span class="radio-text">Enabled <small>Emit fall, lying-motionless and inactivity alerts</small></span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="fallEnabled" value="false">
+              <span class="radio-mark"></span>
+              <span class="radio-text">Disabled <small>Suppress fall alerts (pose model still runs for face/ReID/zones)</small></span>
+            </label>
+          </div>
+        </div>
         <div class="slider-group">
           <div class="slider-head">
             <label>Fall confidence threshold</label>
@@ -1950,6 +1965,8 @@ function attachDirtyListeners() {
 
 function gatherSettings() {
   const data = {};
+  const fallEn = document.querySelector('input[name=fallEnabled]:checked');
+  if (fallEn) data.fall_enabled = fallEn.value === 'true';
   const tH = document.getElementById('setThreshold');
   if (tH) data.fall_threshold = parseInt(tH.value) / 100;
   const inA = document.getElementById('setInactivity');
@@ -2034,6 +2051,8 @@ function discardChanges() {
 
 function loadSettings() {
   fetch(API+'/api/settings').then(r=>r.json()).then(s=>{
+    const fallEnabledVal = String(s.fall_enabled !== false);
+    document.querySelectorAll('input[name=fallEnabled]').forEach(r => r.checked = (r.value === fallEnabledVal));
     const thr = document.getElementById('setThreshold');
     if (thr) { thr.value = Math.round(s.fall_threshold*100); updateSlider(thr,'setThresholdVal'); }
     const inA = document.getElementById('setInactivity');

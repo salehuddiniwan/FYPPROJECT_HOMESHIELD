@@ -20,6 +20,11 @@ insightface==0.7.3
 onnxruntime-gpu>=1.17.0,<2.0; platform_system != "Darwin"
 onnxruntime>=1.17.0,<2.0;     platform_system == "Darwin"
 
+# Cross-camera person Re-Identification (body appearance embeddings).
+# OSNet via torchreid; first run auto-downloads the pretrained weights.
+#   pip install torchreid
+torchreid>=1.4.0
+
 # Web dashboard
 Flask>=3.0.0,<4
 Werkzeug>=3.0.0,<4

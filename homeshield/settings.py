@@ -11,6 +11,7 @@ from .db import read_conn, write_conn
 
 DEFAULTS: dict[str, Any] = {
     # Fall detector
+    "fall_enabled": True,
     "fall_threshold": 0.80,
     "inactivity_seconds": 300,
     "alert_cooldown": 60,
@@ -36,6 +37,15 @@ DEFAULTS: dict[str, Any] = {
     "face_match_threshold": 0.45,
     "intruder_cooldown": 30,
     "face_every_n": 5,
+
+    # Cross-camera person Re-Identification (OSNet body embeddings).
+    "reid_enabled": True,
+    "reid_model": "osnet_x1_0",        # any model torchreid supports
+    "reid_match_threshold": 0.65,      # cosine sim required to merge identities
+    "reid_ttl_seconds": 120,           # forget identities idle longer than this
+    "reid_every_n": 6,                 # run ReID every N frames per camera
+    "reid_reembed_interval": 3.0,      # seconds between re-embeds for a track
+    "reid_handoff_cooldown": 5.0,      # seconds between handoff events per id
 }
 
 
