@@ -450,7 +450,6 @@ Lower the **fall sensitivity** in Settings, or raise the descent-velocity thresh
 
 **Stretch**
 - Federated person gallery so multiple HomeShield nodes on a LAN share the registered Persons / Intruder DB.
-- Re-identification across cameras (track who walked from kitchen → living room).
 - Activity classifier (cooking, sleeping, watching TV) for elderly-care use cases.
 
 ---
